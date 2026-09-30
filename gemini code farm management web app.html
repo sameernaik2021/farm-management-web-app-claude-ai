@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Farm Operating System (FMS) Blueprint Edition</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .active-nav { background-color: #15803d; color: white; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans antialiased pb-20 md:pb-0">
+
+  <!-- Network Status Banner -->
+  <div id="syncBanner" class="bg-emerald-600 text-white text-xs py-1 px-4 text-center flex justify-between items-center transition-colors duration-300">
+    <span id="syncStatusText" class="font-medium"><i class="fa-solid fa-cloud-check mr-1"></i> System Online • All data synced</span>
+    <div class="flex items-center space-x-2">
+      <span id="pendingCountBadge" class="bg-emerald-800 text-emerald-100 px-2 py-0.5 rounded-full text-[10px] hidden">0 Pending</span>
+      <button onclick="fms.toggleNetworkMode()" class="underline text-[10px] hover:text-emerald-200">Toggle Offline Mode</button>
+    </div>
+  </div>
+
+  <div class="flex h-[calc(100vh-28px)] overflow-hidden">
+    <!-- Desktop Sidebar Navigation -->
+    <aside class="hidden md:flex flex-col w-64 bg-slate-900 text-slate-300 flex-shrink-0">
+      <div class="p-4 border-b border-slate-800 flex items-center space-x-3">
+        <div class="bg-emerald-600 p-2 rounded-lg text-white">
+          <i class="fa-solid fa-wheat-awn text-xl"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-white text-base tracking-wide">AgriOS Platform</h1>
+          <p class="text-xs text-slate-400" id="currentFarmName">Green Valley Farm</p>
+        </div>
+      </div>
+      <nav class="flex-1 overflow-y-auto p-3 space-y-1" id="desktopNav">
+        <!-- Injected via JS -->
+      </nav>
+      <div class="p-3 border-t border-slate-800">
+        <label for="langSelect" class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Language</label>
+        <select id="langSelect" onchange="fms.setLanguage(this.value)" class="w-full bg-slate-800 text-slate-200 text-xs rounded border border-slate-700 p-1.5 focus:outline-none focus:border-emerald-500">
+          <option value="en">English</option>
+          <option value="hi">हिंदी (Hindi)</option>
+          <option value="mr">मराठी (Marathi)</option>
+        </select>
+      </div>
+    </aside>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-y-auto">
+      <!-- Mobile Header -->
+      <header class="md:hidden bg-slate-900 text-white p-3 flex justify-between items-center shadow-md">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-wheat-awn text-emerald-500 text-lg"></i>
+          <span class="font-bold text-sm tracking-wide">AgriOS</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <select id="langSelectMobile" onchange="fms.setLanguage(this.value)" class="bg-slate-800 text-white text-xs rounded border border-slate-700 p-1">
+            <option value="en">EN</option>
+            <option value="hi">HI</option>
+            <option value="mr">MR</option>
+          </select>
+        </div>
+      </header>
+
+      <!-- View Sections -->
+      <div class="p-4 md:p-6 space-y-6 max-w-7xl mx-auto w-full">
+
+        <!-- 1. DASHBOARD VIEW -->
+        <section id="view-dashboard" class="space-y-6">
+          <div class="bg-gradient-to-r from-emerald-800 to-teal-700 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden">
+            <div class="relative z-10 flex flex-col md:flex-row justify-between md:items-center gap-4">
+              <div>
+                <p class="text-emerald-200 text-xs font-semibold uppercase tracking-wider" id="lbl-greeting">Good Morning</p>
+                <h2 class="text-2xl font-bold tracking-tight mt-0.5">Rajesh Patil</h2>
+                <p class="text-xs text-emerald-100/80 mt-1"><i class="fa-solid fa-location-dot mr-1"></i> Pune Region • Sector B4</p>
+              </div>
+              <div class="bg-white/10 backdrop-blur-md rounded-xl p-3 flex items-center space-x-4 border border-white/10">
+                <div class="text-center px-2">
+                  <i class="fa-solid fa-cloud-sun-rain text-amber-300 text-2xl"></i>
+                  <p class="text-[10px] text-emerald-100 mt-1">Weather</p>
+                </div>
+                <div class="border-l border-white/20 pl-4">
+                  <div class="text-xl font-bold">28°C</div>
+                  <p class="text-xs text-amber-200">Rain forecast tomorrow</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3" id="lbl-quickactions">Quick Actions</h3>
+            <div class="grid grid-cols-3 sm:grid-cols-6 gap-2">
+              <button onclick="fms.openModal('modalIrrigation')" class="flex flex-col items-center justify-center p-3 bg-white rounded-xl shadow-sm border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 transition">
+                <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-1"><i class="fa-solid fa-droplet"></i></div>
+                <span class="text-xs font-medium text-slate-700 text-center">+ Irrigation</span>
+              </button>
+              <button onclick="fms.openModal('modalExpense')" class="flex flex-col items-center justify-center p-3 bg-white rounded-xl shadow-sm border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 transition">
+                <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-1"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+                <span class="text-xs font-medium text-slate-700 text-center">+ Expense</span>
+              </button>
+              <button onclick="fms.openModal('modalActivity')" class="flex flex-col items-center justify-center p-3 bg-white rounded-xl shadow-sm border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 transition">
+                <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mb-1"><i class="fa-solid fa-list-check"></i></div>
+                <span class="text-xs font-medium text-slate-700 text-center">+ Activity</span>
+              </button>
+              <button onclick="fms.openModal('modalHarvest')" class="flex flex-col items-center justify-center p-3 bg-white rounded-xl shadow-sm border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 transition">
+                <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mb-1"><i class="fa-solid fa-wheat-awn"></i></div>
+                <span class="text-xs font-medium text-slate-700 text-center">+ Harvest</span>
+              </button>
+              <button onclick="fms.openModal('modalObservation')" class="flex flex-col items-center justify-center p-3 bg-white rounded-xl shadow-sm border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 transition">
+                <div class="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mb-1"><i class="fa-solid fa-bug"></i></div>
+                <span class="text-xs font-medium text-slate-700 text-center">+ Observation</span>
+              </button>
+              <button onclick="fms.switchView('traceability')" class="flex flex-col items-center justify-center p-3 bg-white rounded-xl shadow-sm border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 transition">
+                <div class="w-10 h-10 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center mb-1"><i class="fa-solid fa-qrcode"></i></div>
+                <span class="text-xs font-medium text-slate-700 text-center">Passport</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Key Metrics -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+              <p class="text-xs font-semibold text-slate-400 uppercase">Active Crops</p>
+              <p class="text-2xl font-bold text-slate-800 mt-1" id="dashActiveCrops">0</p>
+              <span class="text-[10px] text-emerald-600 font-medium">Across 4 fields</span>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+              <p class="text-xs font-semibold text-slate-400 uppercase">Water Used</p>
+              <p class="text-2xl font-bold text-slate-800 mt-1" id="dashWaterUsed">0 L</p>
+              <span class="text-[10px] text-blue-600 font-medium">This month</span>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+              <p class="text-xs font-semibold text-slate-400 uppercase">Total Expenses</p>
+              <p class="text-2xl font-bold text-slate-800 mt-1" id="dashTotalExpenses">₹0</p>
+              <span class="text-[10px] text-rose-500 font-medium">All active cycles</span>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+              <p class="text-xs font-semibold text-slate-400 uppercase">Projected Net</p>
+              <p class="text-2xl font-bold text-slate-800 mt-1" id="dashProjectedNet">₹0</p>
+              <span class="text-[10px] text-emerald-600 font-medium">Estimated yield value</span>
+            </div>
+          </div>
+
+          <!-- Active Crop Stages -->
+          <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+            <h3 class="font-bold text-slate-800 text-sm mb-3">Active Crop Growth Cycles</h3>
+            <div class="space-y-4" id="dashCropCycles">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. FIELDS & GIS MAP VIEW -->
+        <section id="view-fields" class="space-y-6 hidden">
+          <div class="flex justify-between items-center">
+            <div>
+              <h2 class="text-lg font-bold text-slate-800">Field Spatial Management</h2>
+              <p class="text-xs text-slate-500">PostGIS Boundary mapping and spatial status</p>
+            </div>
+            <button onclick="fms.openModal('modalField')" class="bg-emerald-600 text-white text-xs px-3 py-2 rounded-lg hover:bg-emerald-700 font-medium">+ Add Field</button>
+          </div>
+
+          <!-- SVG Visual Map -->
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">GIS CAD Interactive Canvas</h3>
+            <div class="bg-slate-900 rounded-lg p-2 h-64 relative flex items-center justify-center overflow-hidden">
+              <svg id="fieldMapSvg" class="w-full h-full" viewBox="0 0 500 300">
+                <!-- Polygons injected dynamically -->
+              </svg>
+              <div class="absolute bottom-2 right-2 bg-slate-800/80 backdrop-blur text-slate-300 text-[10px] px-2 py-1 rounded">
+                Scale: 1:2000 | WGS84 EPSG:4326
+              </div>
+            </div>
+          </div>
+
+          <!-- Field Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="fieldsListGrid">
+            <!-- Dynamically populated -->
+          </div>
+        </section>
+
+        <!-- 3. CROP MANAGEMENT VIEW -->
+        <section id="view-crops" class="space-y-6 hidden">
+          <div class="flex justify-between items-center">
+            <div>
+              <h2 class="text-lg font-bold text-slate-800">Crop Cycle Management</h2>
+              <p class="text-xs text-slate-500">Track life stages, inputs, and planned activities</p>
+            </div>
+            <button onclick="fms.openModal('modalCropCycle')" class="bg-emerald-600 text-white text-xs px-3 py-2 rounded-lg hover:bg-emerald-700 font-medium">+ New Crop Cycle</button>
+          </div>
+
+          <div class="space-y-4" id="cropCyclesList">
+            <!-- Dynamically populated -->
+          </div>
+        </section>
+
+        <!-- 4. INVENTORY VIEW -->
+        <section id="view-inventory" class="space-y-6 hidden">
+          <div class="flex justify-between items-center">
+            <div>
+              <h2 class="text-lg font-bold text-slate-800">Input & Produce Inventory</h2>
+              <p class="text-xs text-slate-500">Lot tracking, seed stock, and chemical supplies</p>
+            </div>
+            <button onclick="fms.openModal('modalInventory')" class="bg-emerald-600 text-white text-xs px-3 py-2 rounded-lg hover:bg-emerald-700 font-medium">+ Add Item</button>
+          </div>
+
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+            <table class="w-full text-left text-xs text-slate-600">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold uppercase tracking-wider text-[10px]">
+                <tr>
+                  <th class="p-3">Item Name</th>
+                  <th class="p-3">Category</th>
+                  <th class="p-3">Lot #</th>
+                  <th class="p-3">Quantity On Hand</th>
+                  <th class="p-3">Est. Value</th>
+                  <th class="p-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="inventoryTableBody" class="divide-y divide-slate-100">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- 5. FINANCIALS VIEW -->
+        <section id="view-finance" class="space-y-6 hidden">
+          <div class="flex justify-between items-center">
+            <div>
+              <h2 class="text-lg font-bold text-slate-800">Financial Ledger & Profitability</h2>
+              <p class="text-xs text-slate-500">Field-level expense allocation and revenue ledger</p>
+            </div>
+            <div class="flex space-x-2">
+              <button onclick="fms.openModal('modalExpense')" class="bg-rose-600 text-white text-xs px-3 py-2 rounded-lg hover:bg-rose-700 font-medium">+ Record Expense</button>
+              <button onclick="fms.openModal('modalRevenue')" class="bg-emerald-600 text-white text-xs px-3 py-2 rounded-lg hover:bg-emerald-700 font-medium">+ Record Revenue</button>
+            </div>
+          </div>
+
+          <!-- Charts Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+              <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Cost Breakdown by Category</h3>
+              <div class="h-48 relative">
+                <canvas id="chartExpenseCategory"></canvas>
+              </div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+              <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Field Profitability Comparison</h3>
+              <div class="h-48 relative">
+                <canvas id="chartProfitability"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Financial Table -->
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+            <div class="p-3 bg-slate-50 border-b border-slate-200 font-bold text-xs text-slate-700">Recent Transactions</div>
+            <table class="w-full text-left text-xs text-slate-600">
+              <thead class="bg-slate-50/50 border-b border-slate-200 text-slate-500 text-[10px] uppercase">
+                <tr>
+                  <th class="p-3">Date</th>
+                  <th class="p-3">Type</th>
+                  <th class="p-3">Category</th>
+                  <th class="p-3">Field / Crop</th>
+                  <th class="p-3 text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody id="financialsTableBody" class="divide-y divide-slate-100">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- 6. TRACEABILITY PASSPORT VIEW -->
+        <section id="view-traceability" class="space-y-6 hidden">
+          <div>
+            <h2 class="text-lg font-bold text-slate-800">Harvest Produce Passport</h2>
+            <p class="text-xs text-slate-500">Generate verifiable audit trails for buyers and compliance</p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+              <label class="block text-xs font-medium text-slate-700">Select Harvest Batch</label>
+              <select id="passportHarvestSelect" onchange="fms.renderPassport(this.value)" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-lg p-2 focus:ring-emerald-500 focus:border-emerald-500">
+                <!-- Dynamically populated -->
+              </select>
+              <p class="text-[11px] text-slate-500">Select a completed harvest to compile its full production lineage passport.</p>
+            </div>
+
+            <!-- Digital Passport Card -->
+            <div class="md:col-span-2 bg-white rounded-xl border-2 border-emerald-600 p-6 shadow-md relative overflow-hidden" id="passportCard">
+              <div class="flex justify-between items-start border-b border-slate-200 pb-4">
+                <div>
+                  <span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Verified Digital Passport</span>
+                  <h3 class="text-xl font-bold text-slate-800 mt-1" id="passCropTitle">Rice (Basmati 370)</h3>
+                  <p class="text-xs text-slate-500" id="passBatchId">Batch #H-2026-8812</p>
+                </div>
+                <div id="passQrCode" class="bg-white p-1 border rounded"></div>
+              </div>
+
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-b border-slate-100 text-xs">
+                <div>
+                  <span class="text-slate-400 block text-[10px] uppercase">Farm Origin</span>
+                  <span class="font-semibold text-slate-700" id="passOrigin">Green Valley Farm</span>
+                </div>
+                <div>
+                  <span class="text-slate-400 block text-[10px] uppercase">Harvest Date</span>
+                  <span class="font-semibold text-slate-700" id="passHarvestDate">28-Sep-2026</span>
+                </div>
+                <div>
+                  <span class="text-slate-400 block text-[10px] uppercase">Quantity</span>
+                  <span class="font-semibold text-slate-700" id="passQuantity">2,500 Kg</span>
+                </div>
+                <div>
+                  <span class="text-slate-400 block text-[10px] uppercase">Soil pH</span>
+                  <span class="font-semibold text-slate-700" id="passSoilPh">6.8 (Optimal)</span>
+                </div>
+              </div>
+
+              <!-- Input Lineage Audit -->
+              <div class="pt-2">
+                <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Input Audit Log</h4>
+                <ul class="text-xs space-y-1.5 text-slate-600" id="passInputLog">
+                  <!-- Populated via JS -->
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7. OFFLINE SYNC LOG VIEW -->
+        <section id="view-synclog" class="space-y-6 hidden">
+          <div class="flex justify-between items-center">
+            <div>
+              <h2 class="text-lg font-bold text-slate-800">Offline Sync Ledger</h2>
+              <p class="text-xs text-slate-500">Local-first IndexedDB transactional queue</p>
+            </div>
+            <button onclick="fms.syncNow()" class="bg-blue-600 text-white text-xs px-3 py-2 rounded-lg hover:bg-blue-700 font-medium flex items-center space-x-1">
+              <i class="fa-solid fa-rotate"></i>
+              <span>Force Server Sync</span>
+            </button>
+          </div>
+
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+            <table class="w-full text-left text-xs text-slate-600">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold uppercase tracking-wider text-[10px]">
+                <tr>
+                  <th class="p-3">Local Sync ID</th>
+                  <th class="p-3">Timestamp</th>
+                  <th class="p-3">Action Module</th>
+                  <th class="p-3">Payload Preview</th>
+                  <th class="p-3">Status</th>
+                </tr>
+              </thead>
+              <tbody id="syncLogTableBody" class="divide-y divide-slate-100">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Mobile Bottom Navigation Bar -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 flex justify-around p-2 text-slate-400 text-[10px] z-40" id="mobileNav">
+    <!-- Injected via JS -->
+  </nav>
+
+  <!-- MODALS -->
+
+  <!-- Modal: Irrigation -->
+  <div id="modalIrrigation" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl space-y-4">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-droplet text-blue-500 mr-1"></i> Log Irrigation Event</h3>
+        <button onclick="fms.closeModal('modalIrrigation')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="formIrrigation" onsubmit="fms.handleIrrigationSubmit(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block font-medium mb-1">Target Field / Crop</label>
+          <select id="irrigationCropCycleId" class="w-full border rounded-lg p-2 bg-slate-50" required></select>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-medium mb-1">Method</label>
+            <select id="irrigationMethod" class="w-full border rounded-lg p-2 bg-slate-50">
+              <option value="Drip">Drip</option>
+              <option value="Sprinkler">Sprinkler</option>
+              <option value="Flood">Flood</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-medium mb-1">Volume (Liters)</label>
+            <input type="number" id="irrigationVolume" class="w-full border rounded-lg p-2 bg-slate-50" placeholder="e.g. 1500" required>
+          </div>
+        </div>
+        <div>
+          <label class="block font-medium mb-1">Duration (Hours)</label>
+          <input type="number" step="0.5" id="irrigationDuration" class="w-full border rounded-lg p-2 bg-slate-50" placeholder="e.g. 2.5" required>
+        </div>
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" onclick="fms.closeModal('modalIrrigation')" class="px-3 py-1.5 border rounded-lg text-slate-600">Cancel</button>
+          <button type="submit" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-medium">Save Log</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Expense -->
+  <div id="modalExpense" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl space-y-4">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-indian-rupee-sign text-emerald-500 mr-1"></i> Record Farm Expense</h3>
+        <button onclick="fms.closeModal('modalExpense')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="formExpense" onsubmit="fms.handleExpenseSubmit(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block font-medium mb-1">Associated Crop Cycle</label>
+          <select id="expenseCropCycleId" class="w-full border rounded-lg p-2 bg-slate-50" required></select>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-medium mb-1">Category</label>
+            <select id="expenseCategory" class="w-full border rounded-lg p-2 bg-slate-50">
+              <option value="Fertilizer">Fertilizer</option>
+              <option value="Seeds">Seeds</option>
+              <option value="Labour">Labour</option>
+              <option value="Pesticides">Pesticides</option>
+              <option value="Machinery">Machinery / Fuel</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-medium mb-1">Amount (₹)</label>
+            <input type="number" id="expenseAmount" class="w-full border rounded-lg p-2 bg-slate-50" placeholder="e.g. 2500" required>
+          </div>
+        </div>
+        <div>
+          <label class="block font-medium mb-1">Vendor / Description</label>
+          <input type="text" id="expenseVendor" class="w-full border rounded-lg p-2 bg-slate-50" placeholder="e.g. Agri Chemicals Ltd" required>
+        </div>
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" onclick="fms.closeModal('modalExpense')" class="px-3 py-1.5 border rounded-lg text-slate-600">Cancel</button>
+          <button type="submit" class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg font-medium">Record Transaction</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Revenue -->
+  <div id="modalRevenue" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl space-y-4">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-wheat-awn text-amber-500 mr-1"></i> Record Produce Revenue</h3>
+        <button onclick="fms.closeModal('modalRevenue')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="formRevenue" onsubmit="fms.handleRevenueSubmit(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block font-medium mb-1">Crop Cycle</label>
+          <select id="revenueCropCycleId" class="w-full border rounded-lg p-2 bg-slate-50" required></select>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-medium mb-1">Amount Received (₹)</label>
+            <input type="number" id="revenueAmount" class="w-full border rounded-lg p-2 bg-slate-50" placeholder="e.g. 45000" required>
+          </div>
+          <div>
+            <label class="block font-medium mb-1">Quantity Sold (Kg)</label>
+            <input type="number" id="revenueQty" class="w-full border rounded-lg p-2 bg-slate-50" placeholder="e.g. 1200" required>
+          </div>
+        </div>
+        <div>
+          <label class="block font-medium mb-1">Buyer / Market Outlet</label>
+          <input type="text" id="revenueBuyer" class="w-full border rounded-lg p-2 bg-slate-50" placeholder="e.g. District APMC Mandi" required>
+        </div>
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" onclick="fms.closeModal('modalRevenue')" class="px-3 py-1.5 border rounded-lg text-slate-600">Cancel</button>
+          <button type="submit" class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg font-medium">Record Revenue</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Harvest Log -->
+  <div id="modalHarvest" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl space-y-4">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-sickle text-purple-600 mr-1"></i> Log Harvest Batch</h3>
+        <button onclick="fms.closeModal('modalHarvest')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="formHarvest" onsubmit="fms.handleHarvestSubmit(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block font-medium mb-1">Crop Cycle</label>
+          <select id="harvestCropCycleId" class="w-full border rounded-lg p-2 bg-slate-50" required></select>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-medium mb-1">Yield Quantity (Kg)</label>
+            <input type="number" id="harvestQty" class="w-full border rounded-lg p-2 bg-slate-50" placeholder="e.g. 2500" required>
+          </div>
+          <div>
+            <label class="block font-medium mb-1">Quality Grade</label>
+            <select id="harvestGrade" class="w-full border rounded-lg p-2 bg-slate-50">
+              <option value="Grade A Premium">Grade A Premium</option>
+              <option value="Grade B Standard">Grade B Standard</option>
+              <option value="Commercial">Commercial</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" onclick="fms.closeModal('modalHarvest')" class="px-3 py-1.5 border rounded-lg text-slate-600">Cancel</button>
+          <button type="submit" class="px-3 py-1.5 bg-purple-600 text-white rounded-lg font-medium">Log Harvest</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: General Activity -->
+  <div id="modalActivity" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl space-y-4">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-list-check text-amber-500 mr-1"></i> Record Crop Activity</h3>
+        <button onclick="fms.closeModal('modalActivity')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="formActivity" onsubmit="fms.handleActivitySubmit(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block font-medium mb-1">Crop Cycle</label>
+          <select id="actCropCycleId" class="w-full border rounded-lg p-2 bg-slate-50" required></select>
+        </div>
+        <div>
+          <label class="block font-medium mb-1">Activity Type</label>
+          <select id="actType" class="w-full border rounded-lg p-2 bg-slate-50">
+            <option value="Sowing">Sowing / Planting</option>
+            <option value="Fertilization">Fertilization Application</option>
+            <option value="Pest Spray">Pest Control Spray</option>
+            <option value="Weeding">Weeding / Pruning</option>
+            <option value="Soil Tilling">Soil Tilling</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-medium mb-1">Notes / Input Details</label>
+          <input type="text" id="actNotes" class="w-full border rounded-lg p-2 bg-slate-50" placeholder="e.g. Applied NPK 19-19-19 25kg" required>
+        </div>
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" onclick="fms.closeModal('modalActivity')" class="px-3 py-1.5 border rounded-lg text-slate-600">Cancel</button>
+          <button type="submit" class="px-3 py-1.5 bg-amber-600 text-white rounded-lg font-medium">Log Activity</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Pest Observation -->
+  <div id="modalObservation" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl space-y-4">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-bug text-rose-500 mr-1"></i> Report Pest/Disease Observation</h3>
+        <button onclick="fms.closeModal('modalObservation')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="formObservation" onsubmit="fms.handleObservationSubmit(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block font-medium mb-1">Crop Cycle</label>
+          <select id="obsCropCycleId" class="w-full border rounded-lg p-2 bg-slate-50" required></select>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-medium mb-1">Issue Severity</label>
+            <select id="obsSeverity" class="w-full border rounded-lg p-2 bg-slate-50">
+              <option value="Low">Low - Monitoring</option>
+              <option value="Medium">Medium - Intervention Needed</option>
+              <option value="High Critical">High Critical</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-medium mb-1">Symptom Type</label>
+            <input type="text" id="obsSymptom" class="w-full border rounded-lg p-2 bg-slate-50" placeholder="e.g. Yellow Leaf Spots" required>
+          </div>
+        </div>
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" onclick="fms.closeModal('modalObservation')" class="px-3 py-1.5 border rounded-lg text-slate-600">Cancel</button>
+          <button type="submit" class="px-3 py-1.5 bg-rose-600 text-white rounded-lg font-medium">Submit Report</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add Field -->
+  <div id="modalField" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl space-y-4">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-vector-square text-emerald-500 mr-1"></i> Add Spatial Field Boundary</h3>
+        <button onclick="fms.closeModal('modalField')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="formField" onsubmit="fms.handleFieldSubmit(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block font-medium mb-1">Field Name / Tag</label>
+          <input type="text" id="fieldName" class="w-full border rounded-lg p-2 bg-slate-50" placeholder="e.g. North Plot #3" required>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-medium mb-1">Area (Hectares)</label>
+            <input type="number" step="0.1" id="fieldArea" class="w-full border rounded-lg p-2 bg-slate-50" placeholder="e.g. 2.5" required>
+          </div>
+          <div>
+            <label class="block font-medium mb-1">Soil Type</label>
+            <select id="fieldSoil" class="w-full border rounded-lg p-2 bg-slate-50">
+              <option value="Black Cotton Soil">Black Cotton Soil</option>
+              <option value="Alluvial Loam">Alluvial Loam</option>
+              <option value="Red Sandy">Red Sandy</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" onclick="fms.closeModal('modalField')" class="px-3 py-1.5 border rounded-lg text-slate-600">Cancel</button>
+          <button type="submit" class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg font-medium">Create Field</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add Crop Cycle -->
+  <div id="modalCropCycle" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl space-y-4">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-seedling text-emerald-500 mr-1"></i> Start New Crop Cycle</h3>
+        <button onclick="fms.closeModal('modalCropCycle')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="formCropCycle" onsubmit="fms.handleCropCycleSubmit(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block font-medium mb-1">Assign to Field</label>
+          <select id="cycleFieldId" class="w-full border rounded-lg p-2 bg-slate-50" required></select>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-medium mb-1">Crop Name</label>
+            <input type="text" id="cycleCropName" class="w-full border rounded-lg p-2 bg-slate-50" placeholder="e.g. Tomato" required>
+          </div>
+          <div>
+            <label class="block font-medium mb-1">Variety</label>
+            <input type="text" id="cycleVariety" class="w-full border rounded-lg p-2 bg-slate-50" placeholder="e.g. Hybrid Red" required>
+          </div>
+        </div>
+        <div>
+          <label class="block font-medium mb-1">Sowing Date</label>
+          <input type="date" id="cycleSowingDate" class="w-full border rounded-lg p-2 bg-slate-50" required>
+        </div>
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" onclick="fms.closeModal('modalCropCycle')" class="px-3 py-1.5 border rounded-lg text-slate-600">Cancel</button>
+          <button type="submit" class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg font-medium">Launch Cycle</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add Inventory -->
+  <div id="modalInventory" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-xl space-y-4">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-boxes-stacked text-emerald-500 mr-1"></i> Add Inventory Stock</h3>
+        <button onclick="fms.closeModal('modalInventory')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="formInventory" onsubmit="fms.handleInventorySubmit(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block font-medium mb-1">Item Description</label>
+          <input type="text" id="invItemName" class="w-full border rounded-lg p-2 bg-slate-50" placeholder="e.g. Urea Fertilizer 46% N" required>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-medium mb-1">Category</label>
+            <select id="invCategory" class="w-full border rounded-lg p-2 bg-slate-50">
+              <option value="Fertilizer">Fertilizer</option>
+              <option value="Pesticides">Pesticides</option>
+              <option value="Seeds">Seeds</option>
+              <option value="Harvested Produce">Harvested Produce</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-medium mb-1">Quantity (Kg / L)</label>
+            <input type="number" id="invQty" class="w-full border rounded-lg p-2 bg-slate-50" placeholder="e.g. 500" required>
+          </div>
+        </div>
+        <div>
+          <label class="block font-medium mb-1">Unit Valuation (₹ per unit)</label>
+          <input type="number" id="invUnitPrice" class="w-full border rounded-lg p-2 bg-slate-50" placeholder="e.g. 18" required>
+        </div>
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" onclick="fms.closeModal('modalInventory')" class="px-3 py-1.5 border rounded-lg text-slate-600">Cancel</button>
+          <button type="submit" class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg font-medium">Add Stock</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- APPLICATION CORE SCRIPT ENGINE -->
+  <script>
+    // System Architecture - Single-State Repository Pattern
+    class FarmSystemEngine {
+      constructor() {
+        this.currentLang = 'en';
+        this.isOnline = true;
+        this.activeView = 'dashboard';
+        
+        // Localization Resource Map
+        this.i18n = {
+          en: {
+            navDash: "Dashboard", navFields: "Fields & Maps", navCrops: "Crop Cycles",
+            navInv: "Inventory", navFinance: "Financials", navTrace: "Traceability",
+            navSync: "Offline Queue", greeting: "Good Morning", quickActions: "Quick Actions"
+          },
+          hi: {
+            navDash: "डैशबोर्ड", navFields: "खेत और नक्शा", navCrops: "फसल चक्र",
+            navInv: "इन्वेंट्री", navFinance: "वित्तीय लेखा", navTrace: "ट्रेसेबिलिटी",
+            navSync: "ऑफलाइन कतार", greeting: "शुभ प्रभात", quickActions: "त्वरित कार्रवाई"
+          },
+          mr: {
+            navDash: "डॅशबोर्ड", navFields: "शेते आणि नकाशे", navCrops: "पिक चक्र",
+            navInv: "साठा व्यवस्थापन", navFinance: "आर्थिक व्यवहार", navTrace: "प्रमाणपत्र",
+            navSync: "ऑफलाइन रांग", greeting: "शुभ प्रभात", quickActions: "जलद कृती"
+          }
+        };
+
+        // Initialize State from Storage or Seed Data
+        this.state = this.loadState() || this.getInitialSeedData();
+        this.charts = {};
+      }
+
+      getInitialSeedData() {
+        return {
+          fields: [
+            { id: 'f-1', name: 'North Field A', areaHa: 2.5, soilType: 'Black Cotton Soil', polygon: '50,20 180,30 160,120 40,100' },
+            { id: 'f-2', name: 'South Plot B', areaHa: 1.8, soilType: 'Alluvial Loam', polygon: '200,40 380,50 350,150 190,130' },
+            { id: 'f-3', name: 'River Basin C', areaHa: 3.2, soilType: 'Red Sandy', polygon: '60,140 220,150 200,260 50,240' },
+            { id: 'f-4', name: 'East Terraces D', areaHa: 1.2, soilType: 'Black Cotton Soil', polygon: '250,160 420,170 400,270 240,250' }
+          ],
+          cropCycles: [
+            { id: 'cc-1', fieldId: 'f-1', cropName: 'Rice', variety: 'Basmati 370', sowingDate: '2026-06-15', stage: 'Flowering', estHarvest: '2026-10-20', status: 'Active' },
+            { id: 'cc-2', fieldId: 'f-2', cropName: 'Cotton', variety: 'Bt-Cotton II', sowingDate: '2026-05-20', stage: 'Boll Formation', estHarvest: '2026-11-15', status: 'Active' },
+            { id: 'cc-3', fieldId: 'f-3', cropName: 'Sugarcane', variety: 'Co 86032', sowingDate: '2026-01-10', stage: 'Maturity', estHarvest: '2026-10-05', status: 'Active' }
+          ],
+          activities: [
+            { id: 'act-1', cropCycleId: 'cc-1', type: 'Sowing', notes: 'Transplanted seedlings from nursery', date: '2026-06-15' },
+            { id: 'act-2', cropCycleId: 'cc-1', type: 'Fertilization', notes: 'Applied Urea 50kg/ha', date: '2026-07-02' },
+            { id: 'act-3', cropCycleId: 'cc-2', type: 'Pest Spray', notes: 'Neem Oil Spray for Aphids', date: '2026-08-12' }
+          ],
+          irrigation: [
+            { id: 'ir-1', cropCycleId: 'cc-1', method: 'Flood', volumeLiters: 12000, durationHrs: 4, date: '2026-09-20' },
+            { id: 'ir-2', cropCycleId: 'cc-2', method: 'Drip', volumeLiters: 3500, durationHrs: 2, date: '2026-09-25' }
+          ],
+          inventory: [
+            { id: 'inv-1', name: 'Urea Granular', category: 'Fertilizer', lotNumber: 'LOT-2026-09A', qty: 350, unitVal: 16 },
+            { id: 'inv-2', name: 'NPK 19-19-19', category: 'Fertilizer', lotNumber: 'LOT-2026-04B', qty: 120, unitVal: 32 },
+            { id: 'inv-3', name: 'Glyphosate 41%', category: 'Pesticides', lotNumber: 'LOT-2026-11C', qty: 45, unitVal: 450 }
+          ],
+          expenses: [
+            { id: 'exp-1', cropCycleId: 'cc-1', category: 'Seeds', amount: 4500, vendor: 'National Seeds Corp', date: '2026-06-10' },
+            { id: 'exp-2', cropCycleId: 'cc-1', category: 'Fertilizer', amount: 3200, vendor: 'Iffco Supply Co', date: '2026-07-02' },
+            { id: 'exp-3', cropCycleId: 'cc-2', category: 'Labour', amount: 6000, vendor: 'Local Labour Group', date: '2026-08-01' }
+          ],
+          revenues: [
+            { id: 'rev-1', cropCycleId: 'cc-3', amount: 125000, qtyKg: 25000, buyer: 'Sugar Mill Coop', date: '2026-09-15' }
+          ],
+          harvests: [
+            { id: 'h-1', cropCycleId: 'cc-1', yieldQtyKg: 2500, grade: 'Grade A Premium', date: '2026-09-28' }
+          ],
+          observations: [
+            { id: 'obs-1', cropCycleId: 'cc-2', severity: 'Medium', symptom: 'Leaf curling on lower branches', date: '2026-09-18' }
+          ],
+          syncQueue: []
+        };
+      }
+
+      init() {
+        this.renderNavigation();
+        this.renderAllViews();
+        this.setupEventListeners();
+        this.updateSyncUI();
+      }
+
+      saveState() {
+        localStorage.setItem('fms_app_state_v2', JSON.stringify(this.state));
+      }
+
+      loadState() {
+        const data = localStorage.getItem('fms_app_state_v2');
+        return data ? JSON.parse(data) : null;
+      }
+
+      // Offline Synchronization Logic
+      pushToSyncQueue(actionModule, payload) {
+        const syncItem = {
+          syncId: 'SYNC-' + Math.floor(100000 + Math.random() * 900000),
+          timestamp: new Date().toLocaleTimeString(),
+          actionModule: actionModule,
+          payloadPreview: JSON.stringify(payload).substring(0, 35) + '...',
+          status: this.isOnline ? 'SYNCED' : 'PENDING'
+        };
+        this.state.syncQueue.unshift(syncItem);
+        this.saveState();
+        this.updateSyncUI();
+      }
+
+      toggleNetworkMode() {
+        this.isOnline = !this.isOnline;
+        if (this.isOnline) {
+          // Process pending sync queue
+          this.state.syncQueue.forEach(q => q.status = 'SYNCED');
+          this.saveState();
+        }
+        this.updateSyncUI();
+        this.renderSyncLogTable();
+      }
+
+      syncNow() {
+        this.isOnline = true;
+        this.state.syncQueue.forEach(q => q.status = 'SYNCED');
+        this.saveState();
+        this.updateSyncUI();
+        this.renderSyncLogTable();
+      }
+
+      updateSyncUI() {
+        const banner = document.getElementById('syncBanner');
+        const statusText = document.getElementById('syncStatusText');
+        const badge = document.getElementById('pendingCountBadge');
+
+        const pendingCount = this.state.syncQueue.filter(i => i.status === 'PENDING').length;
+
+        if (this.isOnline) {
+          banner.className = "bg-emerald-600 text-white text-xs py-1 px-4 text-center flex justify-between items-center transition-colors duration-300";
+          statusText.innerHTML = `<i class="fa-solid fa-cloud-check mr-1"></i> System Online • All data synced`;
+          badge.classList.add('hidden');
+        } else {
+          banner.className = "bg-amber-600 text-white text-xs py-1 px-4 text-center flex justify-between items-center transition-colors duration-300";
+          statusText.innerHTML = `<i class="fa-solid fa-cloud-slash mr-1"></i> Offline Mode • Saving to Local Database`;
+          badge.classList.remove('hidden');
+          badge.textContent = `${pendingCount} Pending Sync`;
+        }
+      }
+
+      // i18n & Navigation Engine
+      setLanguage(lang) {
+        this.currentLang = lang;
+        document.getElementById('langSelect').value = lang;
+        document.getElementById('langSelectMobile').value = lang;
+        this.renderNavigation();
+        this.updateLocalizedLabels();
+      }
+
+      updateLocalizedLabels() {
+        const dict = this.i18n[this.currentLang];
+        document.getElementById('lbl-greeting').textContent = dict.greeting;
+        document.getElementById('lbl-quickactions').textContent = dict.quickActions;
+      }
+
+      renderNavigation() {
+        const dict = this.i18n[this.currentLang];
+        const navItems = [
+          { id: 'dashboard', icon: 'fa-chart-pie', label: dict.navDash },
+          { id: 'fields', icon: 'fa-vector-square', label: dict.navFields },
+          { id: 'crops', icon: 'fa-seedling', label: dict.navCrops },
+          { id: 'inventory', icon: 'fa-boxes-stacked', label: dict.navInv },
+          { id: 'finance', icon: 'fa-indian-rupee-sign', label: dict.navFinance },
+          { id: 'traceability', icon: 'fa-qrcode', label: dict.navTrace },
+          { id: 'synclog', icon: 'fa-rotate', label: dict.navSync }
+        ];
+
+        // Desktop
+        const desktopNav = document.getElementById('desktopNav');
+        desktopNav.innerHTML = navItems.map(item => `
+          <button onclick="fms.switchView('${item.id}')" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-medium transition ${this.activeView === item.id ? 'active-nav' : 'hover:bg-slate-800 text-slate-400 hover:text-white'}">
+            <i class="fa-solid ${item.icon} text-base w-5"></i>
+            <span>${item.label}</span>
+          </button>
+        `).join('');
+
+        // Mobile
+        const mobileNav = document.getElementById('mobileNav');
+        mobileNav.innerHTML = navItems.slice(0, 5).map(item => `
+          <button onclick="fms.switchView('${item.id}')" class="flex flex-col items-center space-y-1 ${this.activeView === item.id ? 'text-emerald-400 font-bold' : 'text-slate-400'}">
+            <i class="fa-solid ${item.icon} text-base"></i>
+            <span class="text-[9px]">${item.label}</span>
+          </button>
+        `).join('');
+      }
+
+      switchView(viewId) {
+        this.activeView = viewId;
+        document.querySelectorAll('main > div > section').forEach(el => el.classList.add('hidden'));
+        const targetView = document.getElementById(`view-${viewId}`);
+        if (targetView) targetView.classList.remove('hidden');
+
+        this.renderNavigation();
+        this.renderAllViews();
+      }
+
+      // Modal Manager
+      openModal(modalId) {
+        this.populateCropSelects();
+        this.populateFieldSelects();
+        document.getElementById(modalId).classList.remove('hidden');
+      }
+
+      closeModal(modalId) {
+        document.getElementById(modalId).classList.add('hidden');
+      }
+
+      populateCropSelects() {
+        const options = this.state.cropCycles.map(c => {
+          const field = this.state.fields.find(f => f.id === c.fieldId);
+          return `<option value="${c.id}">${c.cropName} (${c.variety}) - ${field ? field.name : 'Unknown Field'}</option>`;
+        }).join('');
+
+        ['irrigationCropCycleId', 'expenseCropCycleId', 'revenueCropCycleId', 'harvestCropCycleId', 'actCropCycleId', 'obsCropCycleId'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.innerHTML = options || '<option value="">No Active Crop Cycles</option>';
+        });
+      }
+
+      populateFieldSelects() {
+        const options = this.state.fields.map(f => `<option value="${f.id}">${f.name} (${f.areaHa} Ha)</option>`).join('');
+        const el = document.getElementById('cycleFieldId');
+        if (el) el.innerHTML = options;
+      }
+
+      // Render Functions
+      renderAllViews() {
+        this.renderDashboard();
+        this.renderFields();
+        this.renderCrops();
+        this.renderInventory();
+        this.renderFinancials();
+        this.renderTraceability();
+        this.renderSyncLogTable();
+      }
+
+      renderDashboard() {
+        // Counts
+        document.getElementById('dashActiveCrops').textContent = this.state.cropCycles.filter(c => c.status === 'Active').length;
+
+        // Water calculation
+        const totalWater = this.state.irrigation.reduce((sum, i) => sum + Number(i.volumeLiters), 0);
+        document.getElementById('dashWaterUsed').textContent = `${totalWater.toLocaleString()} L`;
+
+        // Financial calculations
+        const totalExp = this.state.expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+        const totalRev = this.state.revenues.reduce((sum, r) => sum + Number(r.amount), 0);
+
+        document.getElementById('dashTotalExpenses').textContent = `₹${totalExp.toLocaleString()}`;
+        document.getElementById('dashProjectedNet').textContent = `₹${(totalRev - totalExp).toLocaleString()}`;
+
+        // Active Cycles Progress Bars
+        const container = document.getElementById('dashCropCycles');
+        container.innerHTML = this.state.cropCycles.map(cycle => {
+          const field = this.state.fields.find(f => f.id === cycle.fieldId);
+          const stageProgress = { 'Seedling': 20, 'Vegetative Growth': 40, 'Flowering': 60, 'Boll Formation': 75, 'Maturity': 90, 'Harvested': 100 };
+          const pct = stageProgress[cycle.stage] || 50;
+
+          return `
+            <div class="border-b border-slate-100 pb-3 last:border-0 last:pb-0">
+              <div class="flex justify-between items-center text-xs mb-1">
+                <span class="font-bold text-slate-800">${cycle.cropName} <span class="text-slate-400 font-normal">(${cycle.variety})</span></span>
+                <span class="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-medium text-[10px]">${cycle.stage}</span>
+              </div>
+              <div class="flex justify-between text-[10px] text-slate-500 mb-1">
+                <span>Field: ${field ? field.name : 'Unassigned'}</span>
+                <span>Est. Harvest: ${cycle.estHarvest}</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                <div class="bg-emerald-600 h-1.5 rounded-full" style="width: ${pct}%"></div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      renderFields() {
+        // Map Canvas SVG rendering
+        const svg = document.getElementById('fieldMapSvg');
+        svg.innerHTML = this.state.fields.map((f, idx) => `
+          <polygon points="${f.polygon}" fill="${idx % 2 === 0 ? '#059669' : '#0d9488'}" fill-opacity="0.6" stroke="#ffffff" stroke-width="2"/>
+          <text x="${parseInt(f.polygon.split(' ')[0]) + 10}" y="${parseInt(f.polygon.split(' ')[0].split(',')[1]) + 20}" fill="#ffffff" font-size="10" font-weight="bold">${f.name}</text>
+        `).join('');
+
+        // Fields Grid
+        const grid = document.getElementById('fieldsListGrid');
+        grid.innerHTML = this.state.fields.map(f => {
+          const activeCrop = this.state.cropCycles.find(c => c.fieldId === f.id && c.status === 'Active');
+          return `
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-start">
+              <div>
+                <h4 class="font-bold text-slate-800 text-sm">${f.name}</h4>
+                <p class="text-xs text-slate-500 mt-0.5">${f.areaHa} Hectares (~${(f.areaHa * 2.471).toFixed(1)} Acres)</p>
+                <div class="mt-3 flex items-center space-x-2">
+                  <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded">${f.soilType}</span>
+                  ${activeCrop ? `<span class="text-[10px] bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded">${activeCrop.cropName} Growing</span>` : '<span class="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded">Fallow</span>'}
+                </div>
+              </div>
+              <div class="text-right">
+                <span class="text-xs text-slate-400">Field ID</span>
+                <span class="block text-xs font-mono font-bold text-slate-600">${f.id}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      renderCrops() {
+        const container = document.getElementById('cropCyclesList');
+        container.innerHTML = this.state.cropCycles.map(c => {
+          const field = this.state.fields.find(f => f.id === c.fieldId);
+          const cycleActivities = this.state.activities.filter(a => a.cropCycleId === c.id);
+
+          return `
+            <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3">
+              <div class="flex justify-between items-start border-b border-slate-100 pb-2">
+                <div>
+                  <h3 class="font-bold text-slate-800 text-base">${c.cropName} <span class="text-xs font-normal text-slate-500">(${c.variety})</span></h3>
+                  <p class="text-xs text-slate-500"><i class="fa-solid fa-location-dot mr-1"></i>${field ? field.name : 'N/A'} • Planted ${c.sowingDate}</p>
+                </div>
+                <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full">${c.stage}</span>
+              </div>
+
+              <!-- Logged Activities List -->
+              <div>
+                <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Activity History</h4>
+                <div class="space-y-1">
+                  ${cycleActivities.length > 0 ? cycleActivities.map(a => `
+                    <div class="text-xs flex justify-between bg-slate-50 p-1.5 rounded">
+                      <span class="font-medium text-slate-700"><i class="fa-solid fa-check text-emerald-500 mr-1"></i>${a.type}:${a.notes}</span>
+                      <span class="text-slate-400 text-[10px]">${a.date}</span>
+                    </div>
+                  `).join('') : '<p class="text-xs text-slate-400 italic">No activities recorded yet.</p>'}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      renderInventory() {
+        const tbody = document.getElementById('inventoryTableBody');
+        tbody.innerHTML = this.state.inventory.map(item => `
+          <tr class="hover:bg-slate-50/80">
+            <td class="p-3 font-semibold text-slate-800">${item.name}</td>
+            <td class="p-3"><span class="bg-slate-100 px-2 py-0.5 rounded text-[10px]">${item.category}</span></td>
+            <td class="p-3 font-mono text-[11px] text-slate-500">${item.lotNumber}</td>
+            <td class="p-3 font-bold text-slate-700">${item.qty} units</td>
+            <td class="p-3">₹${(item.qty * item.unitVal).toLocaleString()}</td>
+            <td class="p-3">
+              <button onclick="fms.deleteInventory('${item.id}')" class="text-rose-500 hover:text-rose-700"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      deleteInventory(id) {
+        this.state.inventory = this.state.inventory.filter(i => i.id !== id);
+        this.saveState();
+        this.renderInventory();
+      }
+
+      renderFinancials() {
+        const tbody = document.getElementById('financialsTableBody');
+        
+        // Combine Expenses and Revenues
+        const transactions = [
+          ...this.state.expenses.map(e => ({ ...e, txnType: 'Expense' })),
+          ...this.state.revenues.map(r => ({ ...r, txnType: 'Revenue', category: 'Crop Sale' }))
+        ].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        tbody.innerHTML = transactions.map(t => {
+          const crop = this.state.cropCycles.find(c => c.id === t.cropCycleId);
+          const isExp = t.txnType === 'Expense';
+          return `
+            <tr class="hover:bg-slate-50">
+              <td class="p-3 text-slate-500">${t.date}</td>
+              <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${isExp ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}">${t.txnType}</span></td>
+              <td class="p-3 font-medium text-slate-700">${t.category}</td>
+              <td class="p-3 text-slate-500">${crop ? crop.cropName : 'General'}</td>
+              <td class="p-3 text-right font-bold ${isExp ? 'text-rose-600' : 'text-emerald-600'}">${isExp ? '-' : '+'}₹${Number(t.amount).toLocaleString()}</td>
+            </tr>
+          `;
+        }).join('');
+
+        this.renderCharts();
+      }
+
+      renderCharts() {
+        // Destroy existing charts safely
+        if (this.charts.expense) this.charts.expense.destroy();
+        if (this.charts.profit) this.charts.profit.destroy();
+
+        // Chart 1: Expense Breakdown
+        const categories = ['Seeds', 'Fertilizer', 'Labour', 'Pesticides', 'Machinery'];
+        const catTotals = categories.map(cat => 
+          this.state.expenses.filter(e => e.category === cat).reduce((sum, e) => sum + Number(e.amount), 0)
+        );
+
+        const ctx1 = document.getElementById('chartExpenseCategory');
+        if (ctx1) {
+          this.charts.expense = new Chart(ctx1, {
+            type: 'doughnut',
+            data: {
+              labels: categories,
+              datasets: [{
+                data: catTotals,
+                backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6']
+              }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+          });
+        }
+
+        // Chart 2: Profitability per Crop
+        const cropNames = this.state.cropCycles.map(c => c.cropName);
+        const cropProfits = this.state.cropCycles.map(c => {
+          const rev = this.state.revenues.filter(r => r.cropCycleId === c.id).reduce((s, r) => s + Number(r.amount), 0);
+          const exp = this.state.expenses.filter(e => e.cropCycleId === c.id).reduce((s, e) => s + Number(e.amount), 0);
+          return rev - exp;
+        });
+
+        const ctx2 = document.getElementById('chartProfitability');
+        if (ctx2) {
+          this.charts.profit = new Chart(ctx2, {
+            type: 'bar',
+            data: {
+              labels: cropNames,
+              datasets: [{
+                label: 'Net Profit / Loss (₹)',
+                data: cropProfits,
+                backgroundColor: cropProfits.map(v => v >= 0 ? '#10b981' : '#ef4444')
+              }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+          });
+        }
+      }
+
+      renderTraceability() {
+        const select = document.getElementById('passportHarvestSelect');
+        select.innerHTML = this.state.harvests.map(h => {
+          const crop = this.state.cropCycles.find(c => c.id === h.cropCycleId);
+          return `<option value="${h.id}">${crop ? crop.cropName : 'Crop'} Harvest - ${h.yieldQtyKg} Kg (${h.date})</option>`;
+        }).join('');
+
+        if (this.state.harvests.length > 0) {
+          this.renderPassport(this.state.harvests[0].id);
+        }
+      }
+
+      renderPassport(harvestId) {
+        const harvest = this.state.harvests.find(h => h.id === harvestId);
+        if (!harvest) return;
+
+        const crop = this.state.cropCycles.find(c => c.id === harvest.cropCycleId);
+        const field = crop ? this.state.fields.find(f => f.id === crop.fieldId) : null;
+        const activities = crop ? this.state.activities.filter(a => a.cropCycleId === crop.id) : [];
+
+        document.getElementById('passCropTitle').textContent = `${crop ? crop.cropName : 'Agricultural Produce'} (${crop ? crop.variety : 'Standard'})`;
+        document.getElementById('passBatchId').textContent = `Batch #${harvest.id.toUpperCase()}-2026`;
+        document.getElementById('passOrigin').textContent = field ? field.name : 'Green Valley Farm';
+        document.getElementById('passHarvestDate').textContent = harvest.date;
+        document.getElementById('passQuantity').textContent = `${harvest.yieldQtyKg} Kg`;
+        document.getElementById('passSoilPh').textContent = field ? `${field.soilType}` : '6.5 (Verified)';
+
+        // Render QR Code
+        const qrContainer = document.getElementById('passQrCode');
+        qrContainer.innerHTML = '';
+        const qr = qrcode(0, 'M');
+        qr.addData(`https://agrios.org/verify/${harvest.id}`);
+        qr.make();
+        qrContainer.innerHTML = qr.createImgTag(3);
+
+        // Input Lineage Audit
+        const inputLog = document.getElementById('passInputLog');
+        inputLog.innerHTML = activities.map(a => `
+          <li class="flex items-center space-x-2">
+            <i class="fa-solid fa-circle-check text-emerald-500 text-[10px]"></i>
+            <span><strong>${a.date}:</strong> ${a.type} - ${a.notes}</span>
+          </li>
+        `).join('') || '<li>No chemicals applied. 100% Organic Cycle.</li>';
+      }
+
+      renderSyncLogTable() {
+        const tbody = document.getElementById('syncLogTableBody');
+        tbody.innerHTML = this.state.syncQueue.map(item => `
+          <tr class="hover:bg-slate-50">
+            <td class="p-3 font-mono text-[11px] font-bold text-slate-700">${item.syncId}</td>
+            <td class="p-3 text-slate-500">${item.timestamp}</td>
+            <td class="p-3 font-semibold text-slate-800">${item.actionModule}</td>
+            <td class="p-3 text-slate-500 font-mono text-[10px]">${item.payloadPreview}</td>
+            <td class="p-3">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${item.status === 'SYNCED' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${item.status}</span>
+            </td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="p-4 text-center text-slate-400">Sync queue is empty</td></tr>';
+      }
+
+      // Event Submit Handlers
+      handleIrrigationSubmit(e) {
+        e.preventDefault();
+        const data = {
+          id: 'ir-' + Date.now(),
+          cropCycleId: document.getElementById('irrigationCropCycleId').value,
+          method: document.getElementById('irrigationMethod').value,
+          volumeLiters: Number(document.getElementById('irrigationVolume').value),
+          durationHrs: Number(document.getElementById('irrigationDuration').value),
+          date: new Date().toISOString().split('T')[0]
+        };
+        this.state.irrigation.push(data);
+        this.pushToSyncQueue('Irrigation Module', data);
+        this.saveState();
+        this.closeModal('modalIrrigation');
+        this.renderAllViews();
+      }
+
+      handleExpenseSubmit(e) {
+        e.preventDefault();
+        const data = {
+          id: 'exp-' + Date.now(),
+          cropCycleId: document.getElementById('expenseCropCycleId').value,
+          category: document.getElementById('expenseCategory').value,
+          amount: Number(document.getElementById('expenseAmount').value),
+          vendor: document.getElementById('expenseVendor').value,
+          date: new Date().toISOString().split('T')[0]
+        };
+        this.state.expenses.push(data);
+        this.pushToSyncQueue('Expense Module', data);
+        this.saveState();
+        this.closeModal('modalExpense');
+        this.renderAllViews();
+      }
+
+      handleRevenueSubmit(e) {
+        e.preventDefault();
+        const data = {
+          id: 'rev-' + Date.now(),
+          cropCycleId: document.getElementById('revenueCropCycleId').value,
+          amount: Number(document.getElementById('revenueAmount').value),
+          qtyKg: Number(document.getElementById('revenueQty').value),
+          buyer: document.getElementById('revenueBuyer').value,
+          date: new Date().toISOString().split('T')[0]
+        };
+        this.state.revenues.push(data);
+        this.pushToSyncQueue('Revenue Module', data);
+        this.saveState();
+        this.closeModal('modalRevenue');
+        this.renderAllViews();
+      }
+
+      handleHarvestSubmit(e) {
+        e.preventDefault();
+        const data = {
+          id: 'h-' + Date.now(),
+          cropCycleId: document.getElementById('harvestCropCycleId').value,
+          yieldQtyKg: Number(document.getElementById('harvestQty').value),
+          grade: document.getElementById('harvestGrade').value,
+          date: new Date().toISOString().split('T')[0]
+        };
+        this.state.harvests.push(data);
+        this.pushToSyncQueue('Harvest Module', data);
+        this.saveState();
+        this.closeModal('modalHarvest');
+        this.renderAllViews();
+      }
+
+      handleActivitySubmit(e) {
+        e.preventDefault();
+        const data = {
+          id: 'act-' + Date.now(),
+          cropCycleId: document.getElementById('actCropCycleId').value,
+          type: document.getElementById('actType').value,
+          notes: document.getElementById('actNotes').value,
+          date: new Date().toISOString().split('T')[0]
+        };
+        this.state.activities.push(data);
+        this.pushToSyncQueue('Activity Module', data);
+        this.saveState();
+        this.closeModal('modalActivity');
+        this.renderAllViews();
+      }
+
+      handleObservationSubmit(e) {
+        e.preventDefault();
+        const data = {
+          id: 'obs-' + Date.now(),
+          cropCycleId: document.getElementById('obsCropCycleId').value,
+          severity: document.getElementById('obsSeverity').value,
+          symptom: document.getElementById('obsSymptom').value,
+          date: new Date().toISOString().split('T')[0]
+        };
+        this.state.observations.push(data);
+        this.pushToSyncQueue('Observation Module', data);
+        this.saveState();
+        this.closeModal('modalObservation');
+        this.renderAllViews();
+      }
+
+      handleFieldSubmit(e) {
+        e.preventDefault();
+        const data = {
+          id: 'f-' + Date.now(),
+          name: document.getElementById('fieldName').value,
+          areaHa: Number(document.getElementById('fieldArea').value),
+          soilType: document.getElementById('fieldSoil').value,
+          polygon: '100,100 200,110 180,200 80,190'
+        };
+        this.state.fields.push(data);
+        this.pushToSyncQueue('Field Spatial Module', data);
+        this.saveState();
+        this.closeModal('modalField');
+        this.renderAllViews();
+      }
+
+      handleCropCycleSubmit(e) {
+        e.preventDefault();
+        const data = {
+          id: 'cc-' + Date.now(),
+          fieldId: document.getElementById('cycleFieldId').value,
+          cropName: document.getElementById('cycleCropName').value,
+          variety: document.getElementById('cycleVariety').value,
+          sowingDate: document.getElementById('cycleSowingDate').value,
+          stage: 'Seedling',
+          estHarvest: '2026-12-30',
+          status: 'Active'
+        };
+        this.state.cropCycles.push(data);
+        this.pushToSyncQueue('Crop Cycle Module', data);
+        this.saveState();
+        this.closeModal('modalCropCycle');
+        this.renderAllViews();
+      }
+
+      handleInventorySubmit(e) {
+        e.preventDefault();
+        const data = {
+          id: 'inv-' + Date.now(),
+          name: document.getElementById('invItemName').value,
+          category: document.getElementById('invCategory').value,
+          lotNumber: 'LOT-' + Math.floor(1000 + Math.random() * 9000),
+          qty: Number(document.getElementById('invQty').value),
+          unitVal: Number(document.getElementById('invUnitPrice').value)
+        };
+        this.state.inventory.push(data);
+        this.pushToSyncQueue('Inventory Module', data);
+        this.saveState();
+        this.closeModal('modalInventory');
+        this.renderAllViews();
+      }
+
+      setupEventListeners() {
+        window.addEventListener('online', () => this.toggleNetworkMode());
+        window.addEventListener('offline', () => this.toggleNetworkMode());
+      }
+    }
+
+    // Launch Application Engine Instance
+    const fms = new FarmSystemEngine();
+    document.addEventListener('DOMContentLoaded', () => fms.init());
+  </script>
+</body>
+</html>

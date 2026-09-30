@@ -1,0 +1,19 @@
+:root{--bg:#f4f7f2;--card:#fff;--fg:#14281a;--mut:#4d6353;--pri:#1f7a3a;--err:#b3261e;--warn:#8a5a00;--bd:#c5d3c8}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1a12;--card:#18271c;--fg:#eaf3ec;--mut:#a9bfae;--pri:#4cc26f;--err:#ff8a80;--warn:#ffc266;--bd:#2f4534}}
+*{box-sizing:border-box}body{margin:0;font:16px/1.4 system-ui,sans-serif;background:var(--bg);color:var(--fg)}
+header{display:flex;justify-content:space-between;align-items:center;padding:.6rem 1rem;background:var(--pri);color:#fff}
+h1{font-size:1.2rem;margin:0}h2{margin:.2rem 0 .6rem}#sync{font-size:.85rem}
+nav{display:flex;gap:.4rem;overflow-x:auto;padding:.5rem;background:var(--card);border-bottom:1px solid var(--bd)}
+nav button{flex:none;min-height:44px;padding:0 .9rem;border:1px solid var(--bd);border-radius:22px;background:none;color:var(--fg);font:inherit}
+nav button[aria-current=true]{background:var(--pri);color:#fff;border-color:var(--pri)}
+main{max-width:960px;margin:auto;padding:1rem}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:1rem;margin-bottom:1rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.6rem}
+.stat b{display:block;font-size:1.3rem}.stat span,.mut{color:var(--mut);font-size:.85rem}
+label{display:block;margin:.5rem 0 .2rem;font-weight:600}
+input,select{width:100%;min-height:44px;padding:.4rem;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--fg);font:inherit}
+button.p,button.d,button.s{min-height:44px;padding:0 1rem;margin:.6rem .4rem 0 0;border-radius:8px;border:0;font:inherit;cursor:pointer}
+button.p{background:var(--pri);color:#fff}button.d{background:none;color:var(--err);border:1px solid var(--err);min-height:36px;margin:0}button.s{background:var(--card);color:var(--fg);border:1px solid var(--bd)}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%}th,td{padding:.4rem .5rem;border-bottom:1px solid var(--bd);text-align:left;white-space:nowrap}
+.err{color:var(--err)}.pos{color:var(--pri)}.neg{color:var(--err)}
+#toast{position:fixed;left:1rem;right:1rem;bottom:1rem;padding:.8rem 1rem;border-radius:8px;background:var(--fg);color:var(--bg);max-width:600px;margin:auto}

@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-900 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgriPulse - Farm Management System</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- QRCode.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+              900: '#14532d',
+            },
+            earth: {
+              800: '#2d221e',
+              900: '#1c1512'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #1e293b; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans antialiased bg-slate-950 text-slate-100 selection:bg-brand-500 selection:text-white">
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- Top App Navigation -->
+  <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur border-b border-slate-800 px-4 py-3 flex items-center justify-between shadow-lg">
+    <div class="flex items-center gap-3">
+      <div class="bg-brand-600 text-white p-2.5 rounded-xl flex items-center justify-center shadow-md shadow-brand-900/40">
+        <i class="fa-solid fa-wheat-awn text-xl"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-lg leading-tight tracking-tight text-white flex items-center gap-2">
+          AgriPulse <span class="text-xs bg-brand-900/80 text-brand-400 border border-brand-700/50 px-2 py-0.5 rounded-full font-normal" id="app-ver">v1.0 Blueprint</span>
+        </h1>
+        <p class="text-xs text-slate-400 flex items-center gap-1.5" id="header-subtitle">
+          <i class="fa-solid fa-[#22c55e] text-brand-500 text-[10px]"></i> Green Valley Organic Farm
+        </p>
+      </div>
+    </div>
+
+    <!-- Header Controls & Offline Pill -->
+    <div class="flex items-center gap-2 sm:gap-3">
+      <!-- Sync Status Pill -->
+      <button id="sync-pill-btn" onclick="app.toggleOnlineSim()" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-full text-xs font-medium transition-all shadow-sm">
+        <span id="sync-indicator-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span id="sync-status-text" class="hidden sm:inline text-slate-200">Synced ☁️</span>
+        <span id="sync-badge" class="bg-slate-700 text-slate-300 px-1.5 py-0.2 rounded-full text-[10px] hidden">0</span>
+      </button>
+
+      <!-- Unit Selector -->
+      <select id="unit-selector" onchange="app.changeUnitSystem(this.value)" class="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-brand-500">
+        <option value="metric">Metric (ha / kg / L)</option>
+        <option value="imperial">Imperial (ac / lbs / gal)</option>
+      </select>
+
+      <!-- Language Selector -->
+      <select id="lang-selector" onchange="app.changeLanguage(this.value)" class="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-brand-500">
+        <option value="en">English 🇺🇸</option>
+        <option value="hi">हिंदी 🇮🇳</option>
+        <option value="mr">मराठी 🇮🇳</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- Main View Router Container -->
+  <div class="flex-1 flex overflow-hidden">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="w-16 md:w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between shrink-0">
+      <nav class="p-2 md:p-3 space-y-1.5">
+        <button onclick="app.navigate('dashboard')" data-nav="dashboard" class="nav-link active w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all text-slate-400 hover:bg-slate-800 hover:text-white">
+          <i class="fa-solid fa-chart-pie text-lg w-5 text-center"></i>
+          <span class="hidden md:inline" data-i18n="nav.dashboard">Dashboard</span>
+        </button>
+        <button onclick="app.navigate('fields')" data-nav="fields" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all text-slate-400 hover:bg-slate-800 hover:text-white">
+          <i class="fa-solid fa-map-location-dot text-lg w-5 text-center"></i>
+          <span class="hidden md:inline" data-i18n="nav.fields">Fields & Map</span>
+        </button>
+        <button onclick="app.navigate('crops')" data-nav="crops" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all text-slate-400 hover:bg-slate-800 hover:text-white">
+          <i class="fa-solid fa-seedling text-lg w-5 text-center"></i>
+          <span class="hidden md:inline" data-i18n="nav.crops">Crops & Cycles</span>
+        </button>
+        <button onclick="app.navigate('irrigation')" data-nav="irrigation" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all text-slate-400 hover:bg-slate-800 hover:text-white">
+          <i class="fa-solid fa-droplet text-lg w-5 text-center"></i>
+          <span class="hidden md:inline" data-i18n="nav.irrigation">Irrigation</span>
+        </button>
+        <button onclick="app.navigate('inventory')" data-nav="inventory" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all text-slate-400 hover:bg-slate-800 hover:text-white">
+          <i class="fa-solid fa-boxes-stacked text-lg w-5 text-center"></i>
+          <span class="hidden md:inline" data-i18n="nav.inventory">Inventory & Lots</span>
+        </button>
+        <button onclick="app.navigate('finance')" data-nav="finance" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all text-slate-400 hover:bg-slate-800 hover:text-white">
+          <i class="fa-solid fa-indian-rupee-sign text-lg w-5 text-center"></i>
+          <span class="hidden md:inline" data-i18n="nav.finance">Finance & Cost</span>
+        </button>
+        <button onclick="app.navigate('labour')" data-nav="labour" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all text-slate-400 hover:bg-slate-800 hover:text-white">
+          <i class="fa-solid fa-users-gear text-lg w-5 text-center"></i>
+          <span class="hidden md:inline" data-i18n="nav.labour">Labour & Machinery</span>
+        </button>
+        <button onclick="app.navigate('traceability')" data-nav="traceability" class="nav-link w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all text-slate-400 hover:bg-slate-800 hover:text-white">
+          <i class="fa-solid fa-qrcode text-lg w-5 text-center"></i>
+          <span class="hidden md:inline" data-i18n="nav.traceability">Traceability</span>
+        </button>
+      </nav>
+
+      <!-- Offline Sync Audit Info Bar -->
+      <div class="p-3 border-t border-slate-800 hidden md:block">
+        <div class="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80 text-xs text-slate-400">
+          <div class="flex justify-between items-center mb-1">
+            <span>Network Mode:</span>
+            <span id="net-mode-label" class="text-emerald-400 font-bold">ONLINE</span>
+          </div>
+          <div class="flex justify-between items-center text-[11px] text-slate-500">
+            <span>Unsynced Changes:</span>
+            <span id="unsynced-count" class="font-mono text-slate-300">0</span>
+          </div>
+          <button onclick="app.forceSync()" class="w-full mt-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs py-1 px-2 rounded border border-slate-700 transition">
+            <i class="fa-solid fa-rotate text-brand-400 mr-1"></i> Force Sync
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Content Body Scroll Area -->
+    <main class="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-950 space-y-6" id="main-content">
+
+      <!-- DASHBOARD VIEW -->
+      <section id="view-dashboard" class="app-view space-y-6">
+        
+        <!-- Weather & Farm Quick Overview Header -->
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <!-- Weather Widget -->
+          <div class="md:col-span-2 bg-gradient-to-br from-slate-900 to-slate-900/90 border border-slate-800 rounded-2xl p-4 flex items-center justify-between shadow-sm relative overflow-hidden">
+            <div class="absolute -right-4 -bottom-4 text-slate-800/20 text-8xl pointer-events-none">
+              <i class="fa-solid fa-cloud-sun-rain"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2 text-xs font-semibold text-amber-400 uppercase tracking-wider mb-1">
+                <i class="fa-solid fa-location-dot"></i> Pune Sector 4 Field
+              </div>
+              <div class="flex items-baseline gap-2">
+                <span class="text-3xl font-extrabold text-white">28°C</span>
+                <span class="text-xs text-slate-400">Humidity 74%</span>
+              </div>
+              <p class="text-xs text-emerald-400 font-medium mt-1 flex items-center gap-1">
+                <i class="fa-solid fa-cloud-showers-heavy"></i> Rain expected tomorrow (~12mm)
+              </p>
+            </div>
+            <div class="text-right z-10">
+              <div class="text-xs text-slate-400">Forecast</div>
+              <div class="text-xs font-semibold text-slate-200">Irrigation Alert</div>
+              <span class="inline-block mt-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] px-2 py-0.5 rounded-full font-medium">Skip Field #2 Drip</span>
+            </div>
+          </div>
+
+          <!-- Quick Stats Cards -->
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
+            <div class="flex justify-between text-slate-400 text-xs font-medium">
+              <span>Active Crops</span>
+              <i class="fa-solid fa-seedling text-brand-400"></i>
+            </div>
+            <div class="text-2xl font-bold text-white mt-2" id="dash-active-crops">4</div>
+            <div class="text-[11px] text-slate-400 mt-1">Across <span id="dash-total-area">6.5</span> <span class="unit-area">ha</span></div>
+          </div>
+
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
+            <div class="flex justify-between text-slate-400 text-xs font-medium">
+              <span>Water Consumption</span>
+              <i class="fa-solid fa-droplet text-blue-400"></i>
+            </div>
+            <div class="text-2xl font-bold text-white mt-2" id="dash-water-usage">14,200 L</div>
+            <div class="text-[11px] text-emerald-400 mt-1"><i class="fa-solid fa-arrow-down"></i> 8% efficiency boost</div>
+          </div>
+
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
+            <div class="flex justify-between text-slate-400 text-xs font-medium">
+              <span>Season Expenses</span>
+              <i class="fa-solid fa-wallet text-amber-400"></i>
+            </div>
+            <div class="text-2xl font-bold text-white mt-2" id="dash-expenses">₹48,500</div>
+            <div class="text-[11px] text-slate-400 mt-1">Est. Profit: <span class="text-brand-400 font-semibold" id="dash-net-profit">₹82,400</span></div>
+          </div>
+
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
+            <div class="flex justify-between text-slate-400 text-xs font-medium">
+              <span>Inventory In-Stock</span>
+              <i class="fa-solid fa-boxes-stacked text-purple-400"></i>
+            </div>
+            <div class="text-2xl font-bold text-white mt-2" id="dash-inventory-items">12 items</div>
+            <div class="text-[11px] text-rose-400 mt-1"><i class="fa-solid fa-triangle-exclamation"></i> 2 items low stock</div>
+          </div>
+        </div>
+
+        <!-- Quick Action Bar -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm">
+          <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-bolt text-amber-400"></i> Quick Actions
+          </h3>
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+            <button onclick="app.openModal('quick-irrigation')" class="bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/30 text-blue-300 rounded-xl p-3 flex flex-col items-center justify-center gap-2 transition group">
+              <i class="fa-solid fa-droplet text-xl text-blue-400 group-hover:scale-110 transition-transform"></i>
+              <span class="text-xs font-medium">+ Irrigation</span>
+            </button>
+            <button onclick="app.openModal('quick-expense')" class="bg-amber-600/10 hover:bg-amber-600/20 border border-amber-500/30 text-amber-300 rounded-xl p-3 flex flex-col items-center justify-center gap-2 transition group">
+              <i class="fa-solid fa-indian-rupee-sign text-xl text-amber-400 group-hover:scale-110 transition-transform"></i>
+              <span class="text-xs font-medium">+ Expense</span>
+            </button>
+            <button onclick="app.openModal('quick-labour')" class="bg-purple-600/10 hover:bg-purple-600/20 border border-purple-500/30 text-purple-300 rounded-xl p-3 flex flex-col items-center justify-center gap-2 transition group">
+              <i class="fa-solid fa-user-plus text-xl text-purple-400 group-hover:scale-110 transition-transform"></i>
+              <span class="text-xs font-medium">+ Labour</span>
+            </button>
+            <button onclick="app.openModal('quick-activity')" class="bg-brand-600/10 hover:bg-brand-600/20 border border-brand-500/30 text-brand-300 rounded-xl p-3 flex flex-col items-center justify-center gap-2 transition group">
+              <i class="fa-solid fa-list-check text-xl text-brand-400 group-hover:scale-110 transition-transform"></i>
+              <span class="text-xs font-medium">+ Activity</span>
+            </button>
+            <button onclick="app.openModal('quick-harvest')" class="bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-500/30 text-emerald-300 rounded-xl p-3 flex flex-col items-center justify-center gap-2 transition group">
+              <i class="fa-solid fa-wheat-awn text-xl text-emerald-400 group-hover:scale-110 transition-transform"></i>
+              <span class="text-xs font-medium">+ Harvest</span>
+            </button>
+            <button onclick="app.openModal('quick-inventory')" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl p-3 flex flex-col items-center justify-center gap-2 transition group">
+              <i class="fa-solid fa-box text-xl text-slate-300 group-hover:scale-110 transition-transform"></i>
+              <span class="text-xs font-medium">+ Stock Log</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Dashboard Grid: Tasks + Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- Today's Tasks & Alerts Checklist -->
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                  <i class="fa-solid fa-calendar-check text-brand-400"></i> Today's Tasks & Alerts
+                </h3>
+                <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full" id="task-completion-count">2/4 Done</span>
+              </div>
+              <div class="space-y-3" id="task-checklist-container">
+                <!-- Dynamically populated tasks -->
+              </div>
+            </div>
+            <button onclick="app.addNewTaskPrompt()" class="mt-4 w-full py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl text-xs font-medium transition">
+              + Add Scheduled Task
+            </button>
+          </div>
+
+          <!-- Financial Performance Chart -->
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm lg:col-span-2">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-chart-column text-brand-400"></i> Yield vs Production Cost Breakdown
+              </h3>
+              <select class="bg-slate-800 text-xs border border-slate-700 text-slate-300 rounded-lg px-2 py-1">
+                <option>Current Season (2026 Kharif)</option>
+              </select>
+            </div>
+            <div class="h-64 relative">
+              <canvas id="yieldCostChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Soil Parameters & Nutrient Balance Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-flask text-emerald-400"></i> Field Soil Test & Nutrient Health Index
+              </h3>
+              <p class="text-xs text-slate-400">Latest Lab Sample: Sep 12, 2026 (North Plot F-01)</p>
+            </div>
+            <button onclick="app.openModal('soil-test')" class="text-xs bg-brand-600/20 hover:bg-brand-600/30 text-brand-300 border border-brand-500/30 px-3 py-1.5 rounded-lg transition">
+              Log Soil Test
+            </button>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 text-center">
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <div class="text-xs text-slate-400 mb-1">pH Balance</div>
+              <div class="text-xl font-bold text-emerald-400">6.8</div>
+              <div class="text-[10px] text-slate-500 mt-1">Optimal Range (6.0 - 7.2)</div>
+            </div>
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <div class="text-xs text-slate-400 mb-1">Nitrogen (N)</div>
+              <div class="text-xl font-bold text-amber-400">70 <span class="text-xs font-normal">kg/ha</span></div>
+              <div class="text-[10px] text-amber-400/80 mt-1">Medium (-10kg needed)</div>
+            </div>
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <div class="text-xs text-slate-400 mb-1">Phosphorus (P)</div>
+              <div class="text-xl font-bold text-emerald-400">45 <span class="text-xs font-normal">kg/ha</span></div>
+              <div class="text-[10px] text-emerald-400/80 mt-1">High (Good)</div>
+            </div>
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <div class="text-xs text-slate-400 mb-1">Potassium (K)</div>
+              <div class="text-xl font-bold text-emerald-400">180 <span class="text-xs font-normal">kg/ha</span></div>
+              <div class="text-[10px] text-emerald-400/80 mt-1">Optimal</div>
+            </div>
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 col-span-2 sm:col-span-1">
+              <div class="text-xs text-slate-400 mb-1">Organic Carbon</div>
+              <div class="text-xl font-bold text-blue-400">0.75 %</div>
+              <div class="text-[10px] text-slate-500 mt-1">Target > 0.8%</div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- FIELDS & GIS MAP VIEW -->
+      <section id="view-fields" class="app-view hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-map-location-dot text-brand-400"></i> Field Polygon Visualizer & Soil GIS
+            </h2>
+            <p class="text-xs text-slate-400">Interactive boundary map with spatial crop growth monitoring</p>
+          </div>
+          <button onclick="app.openModal('add-field')" class="bg-brand-600 hover:bg-brand-500 text-white text-xs px-4 py-2 rounded-xl font-medium transition shadow-sm">
+            + Register New Field
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Interactive Canvas Map Renderer -->
+          <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm relative flex flex-col">
+            <div class="flex justify-between items-center mb-3">
+              <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Field GIS Boundary Canvas</span>
+              <div class="flex items-center gap-2 text-xs">
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Veg. Stage</span>
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> Flowering</span>
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Sowing</span>
+              </div>
+            </div>
+            
+            <div class="relative w-full h-80 bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center">
+              <svg id="gis-map-svg" class="w-full h-full cursor-pointer" viewBox="0 0 600 350">
+                <!-- SVG map elements rendered dynamically -->
+              </svg>
+              <!-- Map overlay badge -->
+              <div class="absolute bottom-3 left-3 bg-slate-900/90 backdrop-blur text-[11px] px-3 py-1.5 rounded-lg border border-slate-700 text-slate-300">
+                Click polygon to view field parameters
+              </div>
+            </div>
+          </div>
+
+          <!-- Fields List -->
+          <div class="space-y-3" id="fields-list-container">
+            <!-- Dynamic fields -->
+          </div>
+        </div>
+      </section>
+
+      <!-- CROPS & CYCLES VIEW -->
+      <section id="view-crops" class="app-view hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-seedling text-brand-400"></i> Active Crop Cycles & Growth Lifecycle
+            </h2>
+            <p class="text-xs text-slate-400">Configure growth stages, log activities, and track harvest readiness</p>
+          </div>
+          <button onclick="app.openModal('add-crop-cycle')" class="bg-brand-600 hover:bg-brand-500 text-white text-xs px-4 py-2 rounded-xl font-medium transition shadow-sm">
+            + Start New Crop Cycle
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6" id="crops-lifecycle-container">
+          <!-- Dynamically populated crop cycle cards with progress timelines -->
+        </div>
+      </section>
+
+      <!-- IRRIGATION VIEW -->
+      <section id="view-irrigation" class="app-view hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-droplet text-blue-400"></i> Water Source & Irrigation Event Logger
+            </h2>
+            <p class="text-xs text-slate-400">Track volume usage, pump energy, and drip schedules</p>
+          </div>
+          <button onclick="app.openModal('quick-irrigation')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-4 py-2 rounded-xl font-medium transition shadow-sm">
+            + Log Irrigation Run
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+            <h3 class="text-sm font-bold text-white mb-3">Water Sources</h3>
+            <div class="space-y-3" id="water-sources-container">
+              <!-- Water sources -->
+            </div>
+          </div>
+
+          <div class="md:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5">
+            <h3 class="text-sm font-bold text-white mb-3">Recent Irrigation Logs</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-950 text-slate-400 border-b border-slate-800">
+                  <tr>
+                    <th class="p-2.5">Date & Time</th>
+                    <th class="p-2.5">Field</th>
+                    <th class="p-2.5">Source & Method</th>
+                    <th class="p-2.5">Volume (L)</th>
+                    <th class="p-2.5">Operator</th>
+                  </tr>
+                </thead>
+                <tbody id="irrigation-logs-table-body" class="divide-y divide-slate-800 text-slate-300">
+                  <!-- Dynamic irrigation rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- INVENTORY VIEW -->
+      <section id="view-inventory" class="app-view hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-boxes-stacked text-purple-400"></i> Stock Inventory & Lot / Batch Tracker
+            </h2>
+            <p class="text-xs text-slate-400">Manage farm inputs, produce batches, and reorder warnings</p>
+          </div>
+          <button onclick="app.openModal('quick-inventory')" class="bg-purple-600 hover:bg-purple-500 text-white text-xs px-4 py-2 rounded-xl font-medium transition shadow-sm">
+            + Add Stock Lot
+          </button>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-950 text-slate-400 border-b border-slate-800">
+                <tr>
+                  <th class="p-3">Lot # / Batch</th>
+                  <th class="p-3">Item Name</th>
+                  <th class="p-3">Category</th>
+                  <th class="p-3">Available Quantity</th>
+                  <th class="p-3">Reorder Point</th>
+                  <th class="p-3">Status</th>
+                  <th class="p-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="inventory-table-body" class="divide-y divide-slate-800 text-slate-300">
+                <!-- Inventory rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- FINANCE VIEW -->
+      <section id="view-finance" class="app-view hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-indian-rupee-sign text-amber-400"></i> Expense, Revenue & Field Profitability
+            </h2>
+            <p class="text-xs text-slate-400">Automated cost allocation per field, crop cycle, and unit yield</p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="app.openModal('quick-expense')" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-3 py-2 rounded-xl font-medium transition shadow-sm">
+              + Expense
+            </button>
+            <button onclick="app.openModal('quick-harvest')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-2 rounded-xl font-medium transition shadow-sm">
+              + Sale / Revenue
+            </button>
+          </div>
+        </div>
+
+        <!-- Profitability Card -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-center">
+            <div class="text-xs text-slate-400">Total Farm Expenses</div>
+            <div class="text-2xl font-bold text-rose-400 mt-1" id="fin-total-expense">₹48,500</div>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-center">
+            <div class="text-xs text-slate-400">Total Harvest Sales</div>
+            <div class="text-2xl font-bold text-emerald-400 mt-1" id="fin-total-revenue">₹130,900</div>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-center">
+            <div class="text-xs text-slate-400">Calculated Net Profit</div>
+            <div class="text-2xl font-bold text-brand-400 mt-1" id="fin-net-profit">₹82,400</div>
+          </div>
+        </div>
+
+        <!-- Expense Transactions Table -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+          <h3 class="text-sm font-bold text-white mb-3">Recent Expense & Cost Allocation Entries</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-950 text-slate-400 border-b border-slate-800">
+                <tr>
+                  <th class="p-2.5">Date</th>
+                  <th class="p-2.5">Category</th>
+                  <th class="p-2.5">Allocated Field / Crop</th>
+                  <th class="p-2.5">Amount</th>
+                  <th class="p-2.5">Notes</th>
+                </tr>
+              </thead>
+              <tbody id="finance-table-body" class="divide-y divide-slate-800 text-slate-300">
+                <!-- Transactions -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- LABOUR & MACHINERY VIEW -->
+      <section id="view-labour" class="app-view hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-users-gear text-purple-400"></i> Labour Roster & Machinery Maintenance
+            </h2>
+            <p class="text-xs text-slate-400">Wage calculations, machine hour meters, and service reminders</p>
+          </div>
+          <button onclick="app.openModal('quick-labour')" class="bg-purple-600 hover:bg-purple-500 text-white text-xs px-4 py-2 rounded-xl font-medium transition shadow-sm">
+            + Log Work / Hours
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Active Workers -->
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+            <h3 class="text-sm font-bold text-white mb-3">Field Workers & Wage Logs</h3>
+            <div class="space-y-3" id="workers-list-container">
+              <!-- Dynamic workers -->
+            </div>
+          </div>
+
+          <!-- Machinery Status -->
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+            <h3 class="text-sm font-bold text-white mb-3">Farm Fleet & Equipment</h3>
+            <div class="space-y-3" id="machinery-list-container">
+              <!-- Dynamic machinery -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TRACEABILITY VIEW -->
+      <section id="view-traceability" class="app-view hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-qrcode text-emerald-400"></i> Produce Traceability & Digital Passport
+            </h2>
+            <p class="text-xs text-slate-400">Generate printable QR provenance cards connecting Field -> Inputs -> Harvest Lot</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+            <h3 class="text-sm font-bold text-white mb-3">Select Harvest Lot</h3>
+            <select id="trace-lot-select" onchange="app.renderTraceabilityPassport(this.value)" class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-xl p-3 focus:outline-none focus:border-brand-500">
+              <!-- Harvest Lot options -->
+            </select>
+          </div>
+
+          <!-- QR Verification Card Preview -->
+          <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row gap-6 items-center" id="qr-passport-card">
+            <!-- Dynamic QR Passport -->
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- MODALS CONTAINER -->
+  <div id="modal-overlay" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative space-y-4 max-h-[90vh] overflow-y-auto" id="modal-box">
+      <button onclick="app.closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div id="modal-dynamic-content">
+        <!-- Dynamic Form Inserted Here -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- APP STATE & LOCAL DATABASE ---
+    const DB_KEYS = {
+      FARMS: 'agri_farms',
+      FIELDS: 'agri_fields',
+      CROPS: 'agri_crops',
+      TASKS: 'agri_tasks',
+      IRRIGATION: 'agri_irrigation',
+      INVENTORY: 'agri_inventory',
+      EXPENSES: 'agri_expenses',
+      WORKERS: 'agri_workers',
+      MACHINERY: 'agri_machinery',
+      SYNC_QUEUE: 'agri_sync_queue'
+    };
+
+    // Translations Dictionary
+    const I18N = {
+      en: {
+        'nav.dashboard': 'Dashboard',
+        'nav.fields': 'Fields & Map',
+        'nav.crops': 'Crops & Cycles',
+        'nav.irrigation': 'Irrigation',
+        'nav.inventory': 'Inventory & Lots',
+        'nav.finance': 'Finance & Cost',
+        'nav.labour': 'Labour & Machinery',
+        'nav.traceability': 'Traceability'
+      },
+      hi: {
+        'nav.dashboard': 'डैशबोर्ड',
+        'nav.fields': 'खेत और मानचित्र',
+        'nav.crops': 'फसल चक्र',
+        'nav.irrigation': 'सिंचाई',
+        'nav.inventory': 'स्टॉक और लॉट',
+        'nav.finance': 'वित्त और लागत',
+        'nav.labour': 'मजदूर और मशीन',
+        'nav.traceability': 'क्यूआर ट्रेस'
+      },
+      mr: {
+        'nav.dashboard': 'डॅशबोर्ड',
+        'nav.fields': 'शेते व नकाशा',
+        'nav.crops': 'पिके आणि टप्पे',
+        'nav.irrigation': 'सिंचन व्यवस्था',
+        'nav.inventory': 'साठा आणि लॉट',
+        'nav.finance': 'आर्थिक हिशोब',
+        'nav.labour': 'मजूर व यंत्रसामग्री',
+        'nav.traceability': 'ट्रेसॅबिलिटी'
+      }
+    };
+
+    // Default Seed Data
+    const SEED_DATA = {
+      fields: [
+        { id: 'f1', name: 'North Plot F-01', area: 2.5, crop: 'Basmati Rice', status: 'Flowering', color: '#22c55e', points: "50,30 220,40 200,160 30,140" },
+        { id: 'f2', name: 'East Orchard F-02', area: 1.8, crop: 'Organic Tomato', status: 'Fruit Dev', color: '#f59e0b', points: "240,45 420,50 400,170 220,165" },
+        { id: 'f3', name: 'South Field F-03', area: 2.2, crop: 'Wheat - Variety A', status: 'Germination', color: '#3b82f6', points: "40,180 210,185 190,310 30,290" }
+      ],
+      crops: [
+        { id: 'c1', fieldId: 'f1', fieldName: 'North Plot F-01', cropName: 'Basmati Rice', variety: 'Pusa 1121', sowingDate: '2026-06-15', estHarvest: '2026-10-20', stage: 'Flowering', progress: 65 },
+        { id: 'c2', fieldId: 'f2', fieldName: 'East Orchard F-02', cropName: 'Organic Tomato', variety: 'Roma VF', sowingDate: '2026-07-01', estHarvest: '2026-11-10', stage: 'Fruit Dev', progress: 50 }
+      ],
+      tasks: [
+        { id: 't1', title: 'Irrigate Field #2 Drip System', field: 'East Orchard F-02', type: 'Water', completed: false, priority: 'High' },
+        { id: 't2', title: 'Apply Urea Fertilizer (50 kg)', field: 'North Plot F-01', type: 'Nutrient', completed: true, priority: 'Medium' },
+        { id: 't3', title: 'Inspect Leaf Damage / Pest Check', field: 'South Field F-03', type: 'Inspection', completed: false, priority: 'High' },
+        { id: 't4', title: 'Tractor Service Due (150 Hours)', field: 'Farm HQ', type: 'Maintenance', completed: false, priority: 'Low' }
+      ],
+      inventory: [
+        { id: 'i1', lot: '#F2026-001', name: 'Urea Fertilizer N-46', category: 'Fertilizer', qty: 120, unit: 'kg', reorder: 50, status: 'In Stock' },
+        { id: 'i2', lot: '#S2026-088', name: 'Tomato Hybrid Seeds', category: 'Seeds', qty: 5, unit: 'kg', reorder: 10, status: 'Low Stock' },
+        { id: 'i3', lot: '#P2026-012', name: 'Neem Oil Organic Spray', category: 'Pesticide', qty: 25, unit: 'L', reorder: 10, status: 'In Stock' }
+      ],
+      expenses: [
+        { id: 'e1', date: '2026-09-15', category: 'Fertilizer', field: 'North Plot F-01', amount: 15000, notes: 'Purchased 10 bags Urea' },
+        { id: 'e2', date: '2026-09-18', category: 'Irrigation Energy', field: 'East Orchard F-02', amount: 3500, notes: 'Diesel pump fuel' },
+        { id: 'e3', date: '2026-09-22', category: 'Labour Wages', field: 'South Field F-03', amount: 6000, notes: 'Weeding 4 workers' }
+      ],
+      irrigation: [
+        { id: 'ir1', date: '2026-09-28 07:00', field: 'East Orchard F-02', source: 'Borewell', method: 'Drip', volume: 4200, operator: 'Ramesh K.' },
+        { id: 'ir2', date: '2026-09-29 06:30', field: 'North Plot F-01', source: 'Canal', method: 'Flood', volume: 10000, operator: 'Suresh M.' }
+      ],
+      workers: [
+        { id: 'w1', name: 'Ramesh Kumar', role: 'Field Specialist', hours: 42, wage: 100, phone: '+91 98765 43210' },
+        { id: 'w2', name: 'Suresh Maurya', role: 'Irrigation Tech', hours: 38, wage: 110, phone: '+91 98765 12345' }
+      ],
+      machinery: [
+        { id: 'm1', name: 'Mahindra 575 DI Tractor', meter: '1,240 hrs', serviceDue: 'In 20 hrs', status: 'Operational' },
+        { id: 'm2', name: 'Solar Drip Pump 5HP', meter: '850 hrs', serviceDue: 'Good', status: 'Active' }
+      ],
+      harvestLots: [
+        { id: 'HL-2026-01', crop: 'Basmati Rice', field: 'North Plot F-01', qty: '2,500 kg', date: '2026-09-20', cert: 'Organic Certified' },
+        { id: 'HL-2026-02', crop: 'Organic Tomato', field: 'East Orchard F-02', qty: '800 kg', date: '2026-09-25', cert: 'GlobalGAP' }
+      ]
+    };
+
+    class FarmAppEngine {
+      constructor() {
+        this.isOnline = true;
+        this.unitSystem = 'metric'; // metric vs imperial
+        this.currentLang = 'en';
+        this.chartInstance = null;
+        this.initStorage();
+      }
+
+      initStorage() {
+        Object.keys(SEED_DATA).forEach(key => {
+          if (!localStorage.getItem('agri_' + key)) {
+            localStorage.setItem('agri_' + key, JSON.stringify(SEED_DATA[key]));
+          }
+        });
+        if (!localStorage.getItem(DB_KEYS.SYNC_QUEUE)) {
+          localStorage.setItem(DB_KEYS.SYNC_QUEUE, JSON.stringify([]));
+        }
+      }
+
+      getData(key) {
+        return JSON.parse(localStorage.getItem('agri_' + key) || '[]');
+      }
+
+      saveData(key, data, isSyncAction = true) {
+        localStorage.setItem('agri_' + key, JSON.stringify(data));
+        if (isSyncAction) {
+          this.queueSyncAction('UPDATE', key, data);
+        }
+        this.updateSyncUI();
+      }
+
+      queueSyncAction(type, entity, payload) {
+        const queue = JSON.parse(localStorage.getItem(DB_KEYS.SYNC_QUEUE) || '[]');
+        queue.push({ id: 'sync_' + Date.now(), type, entity, payload, timestamp: new Date().toISOString() });
+        localStorage.setItem(DB_KEYS.SYNC_QUEUE, JSON.stringify(queue));
+      }
+
+      toggleOnlineSim() {
+        this.isOnline = !this.isOnline;
+        const dot = document.getElementById('sync-indicator-dot');
+        const text = document.getElementById('sync-status-text');
+        const netLabel = document.getElementById('net-mode-label');
+
+        if (this.isOnline) {
+          dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse";
+          text.innerText = "Synced ☁️";
+          netLabel.innerText = "ONLINE";
+          netLabel.className = "text-emerald-400 font-bold";
+          this.showToast("Network restored. Syncing offline updates...", "success");
+          this.forceSync();
+        } else {
+          dot.className = "w-2.5 h-2.5 rounded-full bg-amber-500";
+          text.innerText = "Offline Mode 🔌";
+          netLabel.innerText = "OFFLINE";
+          netLabel.className = "text-amber-400 font-bold";
+          this.showToast("Switched to Offline Mode. Changes will queue locally.", "warning");
+        }
+        this.updateSyncUI();
+      }
+
+      forceSync() {
+        if (!this.isOnline) {
+          this.showToast("Cannot sync in Offline Mode", "error");
+          return;
+        }
+        const queue = JSON.parse(localStorage.getItem(DB_KEYS.SYNC_QUEUE) || '[]');
+        if (queue.length === 0) {
+          this.showToast("All changes are up to date", "info");
+          return;
+        }
+        localStorage.setItem(DB_KEYS.SYNC_QUEUE, JSON.stringify([]));
+        this.updateSyncUI();
+        this.showToast(`Successfully synced ${queue.length} offline transactions!`, "success");
+      }
+
+      updateSyncUI() {
+        const queue = JSON.parse(localStorage.getItem(DB_KEYS.SYNC_QUEUE) || '[]');
+        const badge = document.getElementById('sync-badge');
+        const unsyncedCount = document.getElementById('unsynced-count');
+        
+        if (unsyncedCount) unsyncedCount.innerText = queue.length;
+        if (queue.length > 0) {
+          badge.classList.remove('hidden');
+          badge.innerText = queue.length;
+        } else {
+          badge.classList.add('hidden');
+        }
+      }
+
+      showToast(msg, type = 'info') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        const bgColors = {
+          success: 'bg-emerald-900/90 border-emerald-600 text-emerald-100',
+          error: 'bg-rose-900/90 border-rose-600 text-rose-100',
+          warning: 'bg-amber-900/90 border-amber-600 text-amber-100',
+          info: 'bg-slate-800 border-slate-700 text-slate-100'
+        };
+        toast.className = `p-3 rounded-xl border text-xs shadow-xl pointer-events-auto flex items-center justify-between transition-all transform translate-y-2 ${bgColors[type]}`;
+        toast.innerHTML = `
+          <div class="flex items-center gap-2">
+            <i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-circle-info'}"></i>
+            <span>${msg}</span>
+          </div>
+          <button onclick="this.parentElement.remove()" class="ml-3 text-slate-400 hover:text-white">&times;</button>
+        `;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+      }
+
+      changeUnitSystem(unit) {
+        this.unitSystem = unit;
+        document.querySelectorAll('.unit-area').forEach(el => el.innerText = unit === 'metric' ? 'ha' : 'ac');
+        this.showToast(`Units switched to ${unit.toUpperCase()}`, "info");
+        this.renderAll();
+      }
+
+      changeLanguage(lang) {
+        this.currentLang = lang;
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+          const key = el.getAttribute('data-i18n');
+          if (I18N[lang] && I18N[lang][key]) {
+            el.innerText = I18N[lang][key];
+          }
+        });
+        this.showToast(`Language set to ${lang === 'hi' ? 'हिंदी' : lang === 'mr' ? 'मराठी' : 'English'}`);
+      }
+
+      navigate(viewId) {
+        document.querySelectorAll('.app-view').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active', 'bg-slate-800', 'text-white'));
+        
+        const targetView = document.getElementById(`view-${viewId}`);
+        if (targetView) targetView.classList.remove('hidden');
+
+        const activeNav = document.querySelector(`[data-nav="${viewId}"]`);
+        if (activeNav) activeNav.classList.add('active', 'bg-slate-800', 'text-white');
+
+        this.renderAll();
+      }
+
+      renderAll() {
+        this.renderDashboard();
+        this.renderFieldsGIS();
+        this.renderCropsLifecycle();
+        this.renderIrrigation();
+        this.renderInventory();
+        this.renderFinance();
+        this.renderLabour();
+        this.renderTraceability();
+      }
+
+      renderDashboard() {
+        const tasks = this.getData('tasks');
+        const container = document.getElementById('task-checklist-container');
+        if (container) {
+          container.innerHTML = tasks.map(t => `
+            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800/80">
+              <div class="flex items-center gap-3">
+                <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="app.toggleTask('${t.id}')" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 bg-slate-900 border-slate-700">
+                <span class="text-xs ${t.completed ? 'line-through text-slate-500' : 'text-slate-200'} font-medium">${t.title}</span>
+              </div>
+              <span class="text-[10px] px-2 py-0.5 rounded-full ${t.priority === 'High' ? 'bg-rose-500/20 text-rose-300' : 'bg-slate-800 text-slate-400'}">${t.field}</span>
+            </div>
+          `).join('');
+          
+          const done = tasks.filter(t => t.completed).length;
+          document.getElementById('task-completion-count').innerText = `${done}/${tasks.length} Done`;
+        }
+
+        this.initYieldChart();
+      }
+
+      toggleTask(id) {
+        const tasks = this.getData('tasks');
+        const task = tasks.find(t => t.id === id);
+        if (task) {
+          task.completed = !task.completed;
+          this.saveData('tasks', tasks);
+          this.renderDashboard();
+        }
+      }
+
+      addNewTaskPrompt() {
+        const title = prompt("Enter scheduled task name:");
+        if (title) {
+          const tasks = this.getData('tasks');
+          tasks.push({ id: 't_' + Date.now(), title, field: 'North Plot F-01', completed: false, priority: 'Medium' });
+          this.saveData('tasks', tasks);
+          this.renderDashboard();
+          this.showToast("New task scheduled!", "success");
+        }
+      }
+
+      initYieldChart() {
+        const ctx = document.getElementById('yieldCostChart');
+        if (!ctx) return;
+
+        if (this.chartInstance) {
+          this.chartInstance.destroy();
+        }
+
+        this.chartInstance = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: ['North Plot F-01', 'East Orchard F-02', 'South Field F-03'],
+            datasets: [
+              { label: 'Production Cost (₹)', data: [15000, 18500, 12000], backgroundColor: '#f59e0b' },
+              { label: 'Projected Harvest Value (₹)', data: [45000, 52000, 31000], backgroundColor: '#22c55e' }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+            scales: {
+              x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
+              y: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } }
+            }
+          }
+        });
+      }
+
+      renderFieldsGIS() {
+        const fields = this.getData('fields');
+        const svg = document.getElementById('gis-map-svg');
+        const list = document.getElementById('fields-list-container');
+
+        if (svg) {
+          svg.innerHTML = `
+            <rect width="100%" height="100%" fill="#0f172a"/>
+            ${fields.map(f => `
+              <polygon points="${f.points}" fill="${f.color}" fill-opacity="0.3" stroke="${f.color}" stroke-width="2" onclick="app.showFieldDetail('${f.id}')" class="hover:fill-opacity-0.6 transition cursor-pointer"/>
+              <text x="${f.points.split(' ')[0].split(',')[0] * 1 + 20}" y="${f.points.split(' ')[0].split(',')[1] * 1 + 30}" fill="#ffffff" font-size="11" font-weight="bold">${f.name}</text>
+            `).join('')}
+          `;
+        }
+
+        if (list) {
+          list.innerHTML = fields.map(f => `
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex justify-between items-center">
+              <div>
+                <h4 class="font-bold text-sm text-white">${f.name}</h4>
+                <p class="text-xs text-slate-400">${f.crop} • ${f.area} ${this.unitSystem === 'metric' ? 'ha' : 'ac'}</p>
+                <span class="inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-emerald-400 border border-emerald-500/30">${f.status}</span>
+              </div>
+              <button onclick="app.showFieldDetail('${f.id}')" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-xl border border-slate-700">View</button>
+            </div>
+          `).join('');
+        }
+      }
+
+      showFieldDetail(id) {
+        const field = this.getData('fields').find(f => f.id === id);
+        if (field) {
+          alert(`Field: ${field.name}\nCrop: ${field.crop}\nArea: ${field.area} ha\nGrowth Status: ${field.status}`);
+        }
+      }
+
+      renderCropsLifecycle() {
+        const crops = this.getData('crops');
+        const container = document.getElementById('crops-lifecycle-container');
+        if (!container) return;
+
+        container.innerHTML = crops.map(c => `
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="text-base font-bold text-white">${c.cropName} (${c.variety})</h3>
+                <p class="text-xs text-slate-400"><i class="fa-solid fa-map-pin text-brand-400 mr-1"></i> ${c.fieldName}</p>
+              </div>
+              <span class="text-xs bg-brand-500/20 text-brand-300 border border-brand-500/30 px-3 py-1 rounded-full font-medium">${c.stage}</span>
+            </div>
+
+            <!-- Lifecycle Stage Timeline -->
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-xs text-slate-400 font-medium">
+                <span>Germination</span>
+                <span>Seedling</span>
+                <span>Vegetative</span>
+                <span class="text-brand-400 font-bold">Flowering</span>
+                <span>Maturity</span>
+                <span>Harvest</span>
+              </div>
+              <div class="w-full bg-slate-950 h-3 rounded-full overflow-hidden border border-slate-800 p-0.5">
+                <div class="bg-gradient-to-r from-brand-600 to-emerald-400 h-full rounded-full transition-all duration-500" style="width: ${c.progress}%"></div>
+              </div>
+            </div>
+
+            <div class="flex justify-between text-xs text-slate-400 border-t border-slate-800 pt-3">
+              <span>Sown: <strong>${c.sowingDate}</strong></span>
+              <span>Est. Harvest: <strong>${c.estHarvest}</strong></span>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      renderIrrigation() {
+        const sources = [
+          { name: 'Borewell #1 (Deep)', status: 'Active - 45 L/min', type: 'Electric Pump' },
+          { name: 'Canal Supply Gate', status: 'Open Slot', type: 'Gravity Flow' }
+        ];
+        const logs = this.getData('irrigation');
+
+        const srcContainer = document.getElementById('water-sources-container');
+        if (srcContainer) {
+          srcContainer.innerHTML = sources.map(s => `
+            <div class="p-3 bg-slate-950 rounded-xl border border-slate-800">
+              <div class="text-xs font-bold text-white">${s.name}</div>
+              <div class="text-[11px] text-blue-400 mt-0.5">${s.status}</div>
+            </div>
+          `).join('');
+        }
+
+        const tableBody = document.getElementById('irrigation-logs-table-body');
+        if (tableBody) {
+          tableBody.innerHTML = logs.map(l => `
+            <tr>
+              <td class="p-2.5">${l.date}</td>
+              <td class="p-2.5 font-medium text-white">${l.field}</td>
+              <td class="p-2.5">${l.source} (${l.method})</td>
+              <td class="p-2.5 font-bold text-blue-400">${l.volume} L</td>
+              <td class="p-2.5">${l.operator}</td>
+            </tr>
+          `).join('');
+        }
+      }
+
+      renderInventory() {
+        const items = this.getData('inventory');
+        const body = document.getElementById('inventory-table-body');
+        if (body) {
+          body.innerHTML = items.map(i => `
+            <tr>
+              <td class="p-3 font-mono text-xs text-brand-400">${i.lot}</td>
+              <td class="p-3 font-bold text-white">${i.name}</td>
+              <td class="p-3">${i.category}</td>
+              <td class="p-3 font-semibold">${i.qty} ${i.unit}</td>
+              <td class="p-3 text-slate-400">${i.reorder} ${i.unit}</td>
+              <td class="p-3">
+                <span class="px-2 py-0.5 rounded-full text-[10px] ${i.qty <= i.reorder ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-emerald-500/20 text-emerald-300'}">${i.status}</span>
+              </td>
+              <td class="p-3 text-right">
+                <button onclick="app.adjustStock('${i.id}')" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-2 py-1 rounded">+ Restock</button>
+              </td>
+            </tr>
+          `).join('');
+        }
+      }
+
+      adjustStock(id) {
+        const items = this.getData('inventory');
+        const item = items.find(i => i.id === id);
+        if (item) {
+          const added = prompt(`Add restock quantity for ${item.name} (${item.unit}):`, "10");
+          if (added && !isNaN(added) && Number(added) > 0) {
+            item.qty += Number(added);
+            item.status = item.qty > item.reorder ? 'In Stock' : 'Low Stock';
+            this.saveData('inventory', items);
+            this.renderInventory();
+            this.showToast(`Restocked ${added} ${item.unit} to ${item.name}`, "success");
+          }
+        }
+      }
+
+      renderFinance() {
+        const exps = this.getData('expenses');
+        const body = document.getElementById('finance-table-body');
+        if (body) {
+          body.innerHTML = exps.map(e => `
+            <tr>
+              <td class="p-2.5">${e.date}</td>
+              <td class="p-2.5 font-medium text-amber-300">${e.category}</td>
+              <td class="p-2.5 text-slate-300">${e.field}</td>
+              <td class="p-2.5 font-bold text-white">₹${e.amount.toLocaleString()}</td>
+              <td class="p-2.5 text-slate-400">${e.notes}</td>
+            </tr>
+          `).join('');
+        }
+      }
+
+      renderLabour() {
+        const workers = this.getData('workers');
+        const machinery = this.getData('machinery');
+
+        const wContainer = document.getElementById('workers-list-container');
+        if (wContainer) {
+          wContainer.innerHTML = workers.map(w => `
+            <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 flex justify-between items-center">
+              <div>
+                <h4 class="font-bold text-xs text-white">${w.name}</h4>
+                <p class="text-[11px] text-slate-400">${w.role} • Rate: ₹${w.wage}/hr</p>
+              </div>
+              <div class="text-right">
+                <div class="text-xs font-bold text-purple-400">₹${w.hours * w.wage}</div>
+                <div class="text-[10px] text-slate-500">${w.hours} hrs logged</div>
+              </div>
+            </div>
+          `).join('');
+        }
+
+        const mContainer = document.getElementById('machinery-list-container');
+        if (mContainer) {
+          mContainer.innerHTML = machinery.map(m => `
+            <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 flex justify-between items-center">
+              <div>
+                <h4 class="font-bold text-xs text-white">${m.name}</h4>
+                <p class="text-[11px] text-slate-400">Meter: ${m.meter}</p>
+              </div>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-emerald-400">${m.status}</span>
+            </div>
+          `).join('');
+        }
+      }
+
+      renderTraceability() {
+        const select = document.getElementById('trace-lot-select');
+        const card = document.getElementById('qr-passport-card');
+        const lots = SEED_DATA.harvestLots;
+
+        if (select && select.children.length === 0) {
+          select.innerHTML = lots.map(l => `<option value="${l.id}">${l.id} - ${l.crop} (${l.field})</option>`).join('');
+        }
+
+        this.renderTraceabilityPassport(select ? select.value : lots[0].id);
+      }
+
+      renderTraceabilityPassport(lotId) {
+        const card = document.getElementById('qr-passport-card');
+        const lot = SEED_DATA.harvestLots.find(l => l.id === lotId) || SEED_DATA.harvestLots[0];
+
+        if (card) {
+          card.innerHTML = `
+            <div class="bg-white p-3 rounded-xl shrink-0 shadow-inner" id="qrcode-box"></div>
+            <div class="space-y-2 flex-1">
+              <div class="flex items-center gap-2">
+                <span class="bg-emerald-500/20 text-emerald-300 text-[10px] px-2 py-0.5 rounded-full font-bold border border-emerald-500/30">Verified Provenance Passport</span>
+              </div>
+              <h3 class="text-base font-extrabold text-white">${lot.crop} (Batch #${lot.id})</h3>
+              <div class="text-xs text-slate-300 space-y-1">
+                <div><i class="fa-solid fa-location-dot text-brand-400 mr-1.5"></i> Origin Field: <strong>${lot.field}</strong></div>
+                <div><i class="fa-solid fa-calendar text-brand-400 mr-1.5"></i> Harvest Date: <strong>${lot.date}</strong></div>
+                <div><i class="fa-solid fa-weight-hanging text-brand-400 mr-1.5"></i> Yield Quantity: <strong>${lot.qty}</strong></div>
+                <div><i class="fa-solid fa-shield-halved text-brand-400 mr-1.5"></i> Quality Standard: <strong>${lot.cert}</strong></div>
+              </div>
+              <button onclick="window.print()" class="mt-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-lg border border-slate-700 transition">
+                <i class="fa-solid fa-print mr-1"></i> Print QR Certificate Card
+              </button>
+            </div>
+          `;
+
+          setTimeout(() => {
+            const box = document.getElementById('qrcode-box');
+            if (box) {
+              box.innerHTML = '';
+              new QRCode(box, { text: `https://agripulse.farm/trace/${lot.id}`, width: 110, height: 110 });
+            }
+          }, 50);
+        }
+      }
+
+      openModal(type) {
+        const overlay = document.getElementById('modal-overlay');
+        const content = document.getElementById('modal-dynamic-content');
+        overlay.classList.remove('hidden');
+
+        const forms = {
+          'quick-irrigation': `
+            <h3 class="text-base font-bold text-white mb-3 flex items-center gap-2"><i class="fa-solid fa-droplet text-blue-400"></i> Log Irrigation Run</h3>
+            <form onsubmit="app.submitForm(event, 'irrigation')" class="space-y-3">
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">Target Field</label>
+                <select id="form-field" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200">
+                  <option>North Plot F-01</option>
+                  <option>East Orchard F-02</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">Water Source & Method</label>
+                <select id="form-source" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200">
+                  <option>Borewell #1 (Drip)</option>
+                  <option>Canal (Flood)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">Water Volume (Litres)</label>
+                <input type="number" id="form-volume" required min="1" placeholder="e.g. 3500" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200">
+              </div>
+              <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs py-2.5 rounded-xl transition">Save Irrigation Log</button>
+            </form>
+          `,
+          'quick-expense': `
+            <h3 class="text-base font-bold text-white mb-3 flex items-center gap-2"><i class="fa-solid fa-indian-rupee-sign text-amber-400"></i> Log Farm Expense</h3>
+            <form onsubmit="app.submitForm(event, 'expense')" class="space-y-3">
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">Category</label>
+                <select id="form-cat" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200">
+                  <option>Fertilizer</option>
+                  <option>Seeds</option>
+                  <option>Pesticides</option>
+                  <option>Labour Wages</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">Amount (₹)</label>
+                <input type="number" id="form-amount" required min="1" placeholder="e.g. 2500" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200">
+              </div>
+              <div>
+                <label class="block text-xs text-slate-400 mb-1">Allocated Field</label>
+                <select id="form-exp-field" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200">
+                  <option>North Plot F-01</option>
+                  <option>East Orchard F-02</option>
+                </select>
+              </div>
+              <button type="submit" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-medium text-xs py-2.5 rounded-xl transition">Record Expense Entry</button>
+            </form>
+          `
+        };
+
+        content.innerHTML = forms[type] || `<p class="text-xs text-slate-400">Form module loading...</p>`;
+      }
+
+      closeModal() {
+        document.getElementById('modal-overlay').classList.add('hidden');
+      }
+
+      submitForm(e, type) {
+        e.preventDefault();
+        if (type === 'irrigation') {
+          const logs = this.getData('irrigation');
+          logs.unshift({
+            id: 'ir_' + Date.now(),
+            date: new Date().toISOString().slice(0, 16).replace('T', ' '),
+            field: document.getElementById('form-field').value,
+            source: 'Borewell',
+            method: 'Drip',
+            volume: Number(document.getElementById('form-volume').value),
+            operator: 'Farmer (Self)'
+          });
+          this.saveData('irrigation', logs);
+          this.showToast("Irrigation log recorded!", "success");
+        } else if (type === 'expense') {
+          const exps = this.getData('expenses');
+          exps.unshift({
+            id: 'e_' + Date.now(),
+            date: new Date().toISOString().slice(0, 10),
+            category: document.getElementById('form-cat').value,
+            field: document.getElementById('form-exp-field').value,
+            amount: Number(document.getElementById('form-amount').value),
+            notes: 'Quick logged expense'
+          });
+          this.saveData('expenses', exps);
+          this.showToast("Expense entry saved!", "success");
+        }
+        this.closeModal();
+        this.renderAll();
+      }
+    }
+
+    let app;
+    window.onload = function() {
+      app = new FarmAppEngine();
+      app.renderAll();
+    };
+  </script>
+</body>
+</html>

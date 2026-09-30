@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#176b45">
+<meta name="description" content="Offline-first Farm Management System web application">
+<title>Farm Management System</title>
+<style>
+:root{
+  --bg:#f4f7f5;--surface:#fff;--surface-2:#edf4ef;--text:#193127;--muted:#687a71;
+  --primary:#176b45;--primary-2:#0f5135;--accent:#d8eadf;--border:#d8e2dc;
+  --danger:#b42318;--warning:#a15c00;--shadow:0 8px 24px rgba(25,49,39,.08);--radius:16px
+}
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,select,textarea{font:inherit}button{cursor:pointer}
+.app{min-height:100vh;display:grid;grid-template-columns:260px 1fr}
+.sidebar{background:#123d2b;color:#fff;padding:20px 14px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{display:flex;gap:10px;align-items:center;padding:8px 10px 20px;font-weight:800;font-size:20px}
+.brand-mark{width:38px;height:38px;border-radius:12px;background:#d8eadf;color:#123d2b;display:grid;place-items:center}
+.nav{display:grid;gap:6px}.nav button{border:0;background:transparent;color:#dcece4;text-align:left;padding:11px 12px;border-radius:10px}
+.nav button:hover,.nav button.active{background:#236348;color:#fff}
+.sidebar-footer{margin-top:20px;padding:12px;border:1px solid #2d604b;border-radius:12px;font-size:12px;color:#c8ddd3}
+.main{min-width:0}.topbar{height:70px;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:10}
+.topbar h1{font-size:20px;margin:0}.top-actions{display:flex;align-items:center;gap:10px}.sync-pill,.role-pill{padding:7px 10px;border-radius:999px;background:var(--surface-2);font-size:12px;color:var(--primary-2)}
+.content{padding:24px;max-width:1500px;margin:auto}.view{display:none}.view.active{display:block}
+.grid{display:grid;gap:16px}.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}.grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}.card h2,.card h3{margin:0 0 12px}.muted{color:var(--muted)}.small{font-size:12px}
+.kpi{min-height:118px}.kpi .label{color:var(--muted);font-size:13px}.kpi .value{font-size:29px;font-weight:800;margin:8px 0 4px}.kpi .sub{font-size:12px;color:var(--muted)}
+.toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap}
+.toolbar-left,.toolbar-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{border:1px solid var(--border);background:#fff;color:var(--text);padding:9px 13px;border-radius:10px}.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}.btn.primary:hover{background:var(--primary-2)}
+.btn.danger{color:var(--danger);border-color:#efc6c2}
+.btn.ghost{background:transparent}
+input,select,textarea{width:100%;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:10px;padding:9px 10px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(23,107,69,.12)}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.field label{display:block;font-size:12px;font-weight:700;margin-bottom:5px;color:var(--muted)}.field.full{grid-column:1/-1}
+.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:720px}.table th,.table td{text-align:left;padding:11px 9px;border-bottom:1px solid var(--border);font-size:13px}.table th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.03em}.badge{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700;background:var(--surface-2);color:var(--primary-2)}.badge.warn{background:#fff1d9;color:var(--warning)}.badge.danger{background:#fde9e7;color:var(--danger)}
+.list{display:grid;gap:10px}.list-item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:11px 0;border-bottom:1px solid var(--border)}.list-item:last-child{border-bottom:0}
+.quick{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.quick button{min-height:62px;border:1px solid var(--border);background:#fff;border-radius:12px;text-align:left;padding:10px}.quick button strong{display:block}.quick button span{font-size:11px;color:var(--muted)}
+.timeline{display:grid;gap:0}.timeline-item{position:relative;padding:0 0 16px 25px;border-left:2px solid var(--accent);margin-left:7px}.timeline-item:before{content:"";position:absolute;left:-6px;top:2px;width:10px;height:10px;border-radius:50%;background:var(--primary)}
+.progress{height:9px;background:#e7eeea;border-radius:999px;overflow:hidden}.progress>span{display:block;height:100%;background:var(--primary)}
+.empty{padding:30px;text-align:center;color:var(--muted)}
+.modal{position:fixed;inset:0;background:rgba(7,28,20,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}.modal.open{display:flex}.modal-box{width:min(680px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:18px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.2)}.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.modal-head h2{margin:0;font-size:18px}
+.toast{position:fixed;right:18px;bottom:18px;z-index:80;background:#173f2d;color:#fff;padding:12px 15px;border-radius:10px;box-shadow:var(--shadow);display:none}.toast.show{display:block}
+.chart{width:100%;height:240px}.bar-chart{display:flex;align-items:flex-end;gap:12px;height:190px;padding:12px 4px;border-bottom:1px solid var(--border)}.bar{flex:1;min-width:18px;background:var(--primary);border-radius:6px 6px 0 0;position:relative}.bar span{position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--muted)}.bar em{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:10px;font-style:normal}
+.weather{background:linear-gradient(135deg,#e9f5ee,#fff);border-color:#cce1d5}.weather-temp{font-size:38px;font-weight:800}.weather-row{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.mobile-nav{display:none}
+.notice{padding:12px;border-radius:12px;background:#fff8e8;border:1px solid #f0d89f;color:#704900;font-size:13px}
+.search{max-width:300px}
+@media(max-width:1050px){.app{grid-template-columns:82px 1fr}.brand span,.nav button span,.sidebar-footer{display:none}.brand{justify-content:center}.nav button{text-align:center;font-size:18px}.grid-4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:720px){
+  .app{display:block}.sidebar{display:none}.topbar{padding:0 14px;height:62px}.content{padding:14px 14px 82px}.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}.quick{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:1fr}.mobile-nav{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);z-index:20}.mobile-nav button{border:0;background:#fff;padding:9px 4px;font-size:10px;color:var(--muted)}.mobile-nav button.active{color:var(--primary);font-weight:800}.mobile-nav b{display:block;font-size:17px}.topbar h1{font-size:16px}.sync-pill{display:none}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark">🌾</div><span>FarmOS</span></div>
+    <nav class="nav" id="sideNav"></nav>
+    <div class="sidebar-footer">Offline-first demo. Data is stored locally in this browser and marked for synchronization.</div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <h1 id="pageTitle">Farm Dashboard</h1>
+      <div class="top-actions">
+        <span class="sync-pill" id="syncStatus">● Local data</span>
+        <span class="role-pill">Farmer</span>
+      </div>
+    </header>
+
+    <section class="content">
+      <section id="dashboard" class="view active"></section>
+      <section id="farms" class="view"></section>
+      <section id="fields" class="view"></section>
+      <section id="crops" class="view"></section>
+      <section id="activities" class="view"></section>
+      <section id="irrigation" class="view"></section>
+      <section id="inventory" class="view"></section>
+      <section id="labour" class="view"></section>
+      <section id="finance" class="view"></section>
+      <section id="tasks" class="view"></section>
+      <section id="weather" class="view"></section>
+      <section id="reports" class="view"></section>
+      <section id="traceability" class="view"></section>
+      <section id="admin" class="view"></section>
+    </section>
+  </main>
+</div>
+
+<nav class="mobile-nav" id="mobileNav"></nav>
+<div class="modal" id="modal"><div class="modal-box"><div class="modal-head"><h2 id="modalTitle"></h2><button class="btn ghost" data-close>✕</button></div><div id="modalBody"></div></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* Farm Management System
+   - No external dependencies
+   - Local-first persistence using localStorage
+   - Configurable master data
+   - Defensive validation and derived KPI calculations
+*/
+
+const STORAGE_KEY = "farmos-fms-v1";
+const SYNC_KEY = "farmos-sync-v1";
+
+const MODULES = [
+  ["dashboard","⌂","Dashboard"],["farms","🌾","Farms"],["fields","▦","Fields"],["crops","🌱","Crop Cycles"],
+  ["activities","✓","Activities"],["irrigation","💧","Irrigation"],["inventory","📦","Inventory"],
+  ["labour","👷","Labour"],["finance","₹","Finance"],["tasks","☑","Tasks"],["weather","☁","Weather"],
+  ["reports","▥","Reports"],["traceability","↳","Traceability"],["admin","⚙","Administration"]
+];
+
+const seed = {
+  farms:[{id:"farm-001",name:"My Farm",location:"Pune, Maharashtra",area:10,unit:"acre"}],
+  fields:[
+    {id:"field-001",farmId:"farm-001",name:"North Field",area:3,unit:"acre"},
+    {id:"field-002",farmId:"farm-001",name:"East Field",area:4,unit:"acre"},
+    {id:"field-003",farmId:"farm-001",name:"Pond Field",area:3,unit:"acre"}
+  ],
+  crops:[
+    {id:"crop-001",fieldId:"field-001",crop:"Rice",variety:"X",season:"Kharif 2026",sowing:"2026-06-15",expectedHarvest:"2026-10-20",stage:"Flowering",status:"Active",area:3},
+    {id:"crop-002",fieldId:"field-002",crop:"Tomato",variety:"Hybrid",season:"Kharif 2026",sowing:"2026-07-01",expectedHarvest:"2026-10-15",stage:"Fruit / Grain Development",status:"Active",area:4}
+  ],
+  activities:[
+    {id:"act-001",type:"Fertilization",fieldId:"field-001",cropId:"crop-001",date:"2026-09-25",quantity:50,unit:"kg",cost:1500,notes:"Urea application",syncStatus:"SYNCED"},
+    {id:"act-002",type:"Pest Observation",fieldId:"field-002",cropId:"crop-002",date:"2026-09-28",quantity:0,unit:"",cost:0,notes:"Leaf damage — medium severity",syncStatus:"SYNCED"}
+  ],
+  irrigation:[
+    {id:"irr-001",fieldId:"field-001",cropId:"crop-001",date:"2026-09-29",duration:2,volume:4000,method:"Drip",source:"Borewell",cost:350,syncStatus:"SYNCED"}
+  ],
+  inventory:[
+    {id:"inv-001",name:"Urea",category:"Fertilizers",unit:"kg",opening:100,purchases:50,used:30},
+    {id:"inv-002",name:"Rice Seed",category:"Seeds",unit:"kg",opening:40,purchases:20,used:10},
+    {id:"inv-003",name:"Diesel",category:"Fuel",unit:"L",opening:120,purchases:50,used:45}
+  ],
+  labour:[
+    {id:"lab-001",worker:"Worker A",date:"2026-09-29",fieldId:"field-001",task:"Fertilization",hours:6,rate:100,cost:600}
+  ],
+  expenses:[
+    {id:"exp-001",date:"2026-09-25",fieldId:"field-001",cropId:"crop-001",category:"Fertilizer",amount:1500,vendor:"Local Supplier",notes:"Urea"}
+  ],
+  harvests:[
+    {id:"har-001",date:"2026-09-30",fieldId:"field-001",cropId:"crop-001",quantity:2200,unit:"kg",lot:"H-2026-09"}
+  ],
+  sales:[{id:"sale-001",date:"2026-09-30",harvestId:"har-001",quantity:2000,price:30,revenue:60000,customer:"Customer A"}],
+  tasks:[
+    {id:"task-001",title:"Irrigate Field 2",fieldId:"field-002",type:"Irrigation",due:"2026-10-01",priority:"High",status:"Pending",assigned:"Farmer"},
+    {id:"task-002",title:"Fertilizer review — Field 4",fieldId:"field-001",type:"Fertilizer",due:"2026-10-02",priority:"Medium",status:"Scheduled",assigned:"Farmer"},
+    {id:"task-003",title:"Tractor service due",fieldId:"",type:"Machine Service",due:"2026-10-03",priority:"High",status:"Pending",assigned:"Farmer"}
+  ],
+  audit:[{id:"audit-001",entity:"Expense",action:"Created",date:"2026-09-30",detail:"EXP-001 ₹1,500"}],
+  settings:{language:"English",areaUnit:"acre",currency:"INR"}
+};
+
+function clone(x){return JSON.parse(JSON.stringify(x));}
+function loadState(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(!raw){localStorage.setItem(STORAGE_KEY,JSON.stringify(seed));return clone(seed);}
+    const parsed=JSON.parse(raw);
+    return Object.assign(clone(seed),parsed);
+  }catch(e){console.error(e); return clone(seed);}
+}
+let state=loadState();
+
+function save(){
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state)); updateSync("Local changes saved");}
+  catch(e){showToast("Storage error: data could not be saved."); console.error(e);}
+}
+function uid(prefix){return prefix+"-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7);}
+function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function money(n){return new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0}).format(Number(n)||0);}
+function num(n){return Number.isFinite(Number(n))?Number(n):0;}
+function dateLabel(s){if(!s)return "—"; const d=new Date(s+"T00:00:00"); return Number.isNaN(d.getTime())?s:d.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});}
+function fieldName(id){return state.fields.find(x=>x.id===id)?.name||"—";}
+function cropName(id){return state.crops.find(x=>x.id===id)?.crop||"—";}
+function totalInventory(item){return num(item.opening)+num(item.purchases)-num(item.used);}
+function totals(){
+  const revenue=state.sales.reduce((a,x)=>a+num(x.revenue),0);
+  const expenses=state.expenses.reduce((a,x)=>a+num(x.amount),0);
+  const labour=state.labour.reduce((a,x)=>a+num(x.cost),0);
+  const irrigation=state.irrigation.reduce((a,x)=>a+num(x.cost),0);
+  const cropActivities=state.activities.reduce((a,x)=>a+num(x.cost),0);
+  const harvest=state.harvests.reduce((a,x)=>a+num(x.quantity),0);
+  const water=state.irrigation.reduce((a,x)=>a+num(x.volume),0);
+  const area=state.fields.reduce((a,x)=>a+num(x.area),0);
+  const cost=expenses+labour+irrigation+cropActivities;
+  return {revenue,expenses,labour,irrigation,cropActivities,cost,profit:revenue-cost,harvest,water,area};
+}
+function addAudit(entity,action,detail){
+  state.audit.unshift({id:uid("audit"),entity,action,date:new Date().toISOString().slice(0,10),detail});
+  state.audit=state.audit.slice(0,100);
+}
+function updateSync(message){
+  const el=document.getElementById("syncStatus");
+  if(el) el.textContent="● "+message;
+  try{localStorage.setItem(SYNC_KEY,JSON.stringify({at:new Date().toISOString(),status:"PENDING_SYNC"}));}catch(_){}
+}
+function showToast(msg){
+  const t=document.getElementById("toast"); t.textContent=msg;t.classList.add("show");
+  clearTimeout(window.__toast);window.__toast=setTimeout(()=>t.classList.remove("show"),2600);
+}
+function openModal(title,body){document.getElementById("modalTitle").textContent=title;document.getElementById("modalBody").innerHTML=body;document.getElementById("modal").classList.add("open");}
+function closeModal(){document.getElementById("modal").classList.remove("open");}
+document.getElementById("modal").addEventListener("click",e=>{if(e.target.id==="modal"||e.target.closest("[data-close]"))closeModal();});
+
+function nav(){
+  const side=document.getElementById("sideNav"), mobile=document.getElementById("mobileNav");
+  side.innerHTML=MODULES.map(([id,ic,label])=>`<button data-nav="${id}"><span>${ic} </span><span>${label}</span></button>`).join("");
+  mobile.innerHTML=MODULES.slice(0,5).map(([id,ic,label])=>`<button data-nav="${id}"><b>${ic}</b>${label}</button>`).join("");
+  document.querySelectorAll("[data-nav]").forEach(b=>b.addEventListener("click",()=>showView(b.dataset.nav)));
+}
+function showView(id){
+  document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id===id));
+  document.querySelectorAll("[data-nav]").forEach(b=>b.classList.toggle("active",b.dataset.nav===id));
+  const mod=MODULES.find(x=>x[0]===id); document.getElementById("pageTitle").textContent=mod?mod[2]:"Farm Dashboard";
+  render(id); window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function dashboard(){
+  const t=totals(), active=state.crops.filter(x=>x.status==="Active").length;
+  const pending=state.tasks.filter(x=>!["Completed","Cancelled","Skipped"].includes(x.status)).length;
+  const invValue=state.inventory.reduce((a,x)=>a+totalInventory(x),0);
+  const alerts=state.tasks.filter(x=>x.priority==="High"&&x.status!=="Completed").slice(0,3);
+  const recent=[...state.activities.map(x=>({date:x.date,title:x.type,detail:`${fieldName(x.fieldId)} • ${x.notes||"Activity recorded"}`})),
+    ...state.irrigation.map(x=>({date:x.date,title:"Irrigation",detail:`${fieldName(x.fieldId)} • ${x.volume} L • ${x.duration} h`}))
+  ].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,6);
+
+  document.getElementById("dashboard").innerHTML=`
+    <div class="toolbar"><div><h2 style="margin:0">Good evening, Farmer</h2><div class="muted small">What should you do today?</div></div>
+      <div class="toolbar-right"><button class="btn primary" data-action="activity">＋ Activity</button><button class="btn" data-action="irrigation">＋ Irrigation</button></div>
+    </div>
+    <div class="grid grid-4">
+      ${kpi("🌱","Active Crops",active,"Crop cycles")}
+      ${kpi("💧","Water Used",t.water.toLocaleString("en-IN")+" L","Recorded irrigation")}
+      ${kpi("₹","Expenses",money(t.cost),"Recorded farm costs")}
+      ${kpi("📦","Inventory",invValue.toLocaleString("en-IN"),"Total tracked units")}
+    </div>
+    <div class="grid grid-3" style="margin-top:16px">
+      <div class="card weather"><h3>🌦 Weather</h3><div class="weather-row"><div><div class="weather-temp">28°C</div><div class="muted">Partly cloudy</div></div><div style="text-align:right"><strong>Rain expected tomorrow</strong><div class="small muted">Review scheduled irrigation</div></div></div></div>
+      <div class="card"><h3>⚠ Alerts & Tasks</h3>${alerts.length?`<div class="list">${alerts.map(x=>`<div class="list-item"><div><strong>${esc(x.title)}</strong><div class="small muted">${dateLabel(x.due)}</div></div><span class="badge warn">${esc(x.priority)}</span></div>`).join("")}</div>`:`<div class="empty">No high-priority alerts.</div>`}</div>
+      <div class="card"><h3>⚡ Quick Actions</h3><div class="quick">
+        <button data-action="irrigation"><strong>💧 Irrigation</strong><span>Record water use</span></button>
+        <button data-action="expense"><strong>₹ Expense</strong><span>Record a cost</span></button>
+        <button data-action="labour"><strong>👷 Labour</strong><span>Record work</span></button>
+        <button data-action="activity"><strong>✓ Activity</strong><span>Crop work</span></button>
+        <button data-action="harvest"><strong>🌾 Harvest</strong><span>Record yield</span></button>
+        <button data-action="inventory"><strong>📦 Inventory</strong><span>Update stock</span></button>
+      </div></div>
+    </div>
+    <div class="grid grid-2" style="margin-top:16px">
+      <div class="card"><h3>Farm Performance</h3><div class="grid grid-2">
+        ${metric("Revenue",money(t.revenue))}${metric("Estimated Profit",money(t.profit))}${metric("Yield",t.harvest.toLocaleString("en-IN")+" kg")}${metric("Yield / Acre",(t.area?t.harvest/t.area:0).toFixed(0)+" kg")}
+      </div></div>
+      <div class="card"><h3>Recent Activity</h3><div class="timeline">${recent.length?recent.map(x=>`<div class="timeline-item"><strong>${esc(x.title)}</strong><div class="small muted">${dateLabel(x.date)} · ${esc(x.detail)}</div></div>`).join(""):`<div class="empty">No recent activity.</div>`}</div></div>
+    </div>`;
+  bindActions();
+}
+function kpi(icon,label,value,sub){return `<div class="card kpi"><div class="label">${icon} ${label}</div><div class="value">${value}</div><div class="sub">${sub}</div></div>`}
+function metric(label,value){return `<div><div class="small muted">${label}</div><strong style="font-size:20px">${value}</strong></div>`}
+
+function farms(){
+ document.getElementById("farms").innerHTML=`<div class="toolbar"><div><h2>Farms</h2><div class="muted small">Organization → Farm → Fields</div></div><button class="btn primary" data-action="farm">＋ Add Farm</button></div>
+ <div class="grid grid-3">${state.farms.map(f=>`<div class="card"><h3>🌾 ${esc(f.name)}</h3><div class="muted">${esc(f.location)}</div><p><strong>${num(f.area)} ${esc(f.unit)}</strong> total area</p><div class="small muted">${state.fields.filter(x=>x.farmId===f.id).length} fields</div><div style="margin-top:12px"><button class="btn" data-delete="farm:${f.id}">Delete</button></div></div>`).join("")||`<div class="card empty">No farms.</div>`}</div>`;
+ bindActions();
+}
+function fields(){
+ document.getElementById("fields").innerHTML=`<div class="toolbar"><div><h2>Fields</h2><div class="muted small">Field-level land and crop organization</div></div><button class="btn primary" data-action="field">＋ Add Field</button></div>
+ <div class="card table-wrap"><table class="table"><thead><tr><th>Field</th><th>Farm</th><th>Area</th><th>Active Crop</th><th>Water Used</th><th>Actions</th></tr></thead><tbody>${state.fields.map(f=>{const c=state.crops.find(x=>x.fieldId===f.id&&x.status==="Active");const water=state.irrigation.filter(x=>x.fieldId===f.id).reduce((a,x)=>a+num(x.volume),0);return `<tr><td><strong>${esc(f.name)}</strong></td><td>${esc(state.farms.find(x=>x.id===f.farmId)?.name||"—")}</td><td>${num(f.area)} ${esc(f.unit)}</td><td>${c?esc(c.crop):"—"}</td><td>${water.toLocaleString("en-IN")} L</td><td><button class="btn" data-delete="field:${f.id}">Delete</button></td></tr>`}).join("")}</tbody></table></div>`;
+ bindActions();
+}
+function crops(){
+ document.getElementById("crops").innerHTML=`<div class="toolbar"><div><h2>Crop Cycles</h2><div class="muted small">Crop + variety + season + lifecycle</div></div><button class="btn primary" data-action="crop">＋ Start Crop Cycle</button></div>
+ <div class="grid grid-2">${state.crops.map(c=>{const pct=stagePct(c.stage);return `<div class="card"><div style="display:flex;justify-content:space-between;gap:8px"><div><h3>🌱 ${esc(c.crop)}</h3><div class="muted">${esc(c.variety)} · ${esc(c.season)}</div></div><span class="badge">${esc(c.status)}</span></div><p><strong>${esc(fieldName(c.fieldId))}</strong> · ${num(c.area)} acre</p><div class="small muted">Stage: ${esc(c.stage)}</div><div class="progress" style="margin:7px 0 14px"><span style="width:${pct}%"></span></div><div class="grid grid-3"><div><div class="small muted">Sowing</div><strong>${dateLabel(c.sowing)}</strong></div><div><div class="small muted">Expected harvest</div><strong>${dateLabel(c.expectedHarvest)}</strong></div><div><div class="small muted">Cost</div><strong>${money(cropCost(c.id))}</strong></div></div><div style="margin-top:12px"><button class="btn" data-delete="crop:${c.id}">Delete</button></div></div>`}).join("")||`<div class="card empty">No crop cycles.</div>`}</div>`;
+ bindActions();
+}
+function stagePct(s){return {Seed:8,Germination:18,Seedling:28,"Vegetative Growth":45,Flowering:60,"Fruit / Grain Development":75,Maturity:90,Harvest:100}[s]||50}
+function cropCost(id){return state.expenses.filter(x=>x.cropId===id).reduce((a,x)=>a+num(x.amount),0)+state.activities.filter(x=>x.cropId===id).reduce((a,x)=>a+num(x.cost),0)+state.labour.filter(x=>state.crops.find(c=>c.id===id)?.fieldId===x.fieldId).reduce((a,x)=>a+num(x.cost),0)+state.irrigation.filter(x=>x.cropId===id).reduce((a,x)=>a+num(x.cost),0)}
+
+function activities(){
+ document.getElementById("activities").innerHTML=`<div class="toolbar"><div><h2>Crop Activities</h2><div class="muted small">Sowing, fertilization, spraying, weeding, observations and more</div></div><button class="btn primary" data-action="activity">＋ Record Activity</button></div>
+ <div class="card table-wrap"><table class="table"><thead><tr><th>Date</th><th>Type</th><th>Field</th><th>Crop</th><th>Quantity</th><th>Cost</th><th>Sync</th><th></th></tr></thead><tbody>${state.activities.map(a=>`<tr><td>${dateLabel(a.date)}</td><td>${esc(a.type)}</td><td>${esc(fieldName(a.fieldId))}</td><td>${esc(cropName(a.cropId))}</td><td>${num(a.quantity)} ${esc(a.unit)}</td><td>${money(a.cost)}</td><td><span class="badge">${esc(a.syncStatus||"PENDING_SYNC")}</span></td><td><button class="btn" data-delete="activity:${a.id}">Delete</button></td></tr>`).join("")}</tbody></table></div>`;
+ bindActions();
+}
+function irrigation(){
+ document.getElementById("irrigation").innerHTML=`<div class="toolbar"><div><h2>Irrigation & Water</h2><div class="muted small">Track source, method, duration, volume and energy-related costs</div></div><button class="btn primary" data-action="irrigation">＋ Record Irrigation</button></div>
+ <div class="grid grid-3"><div class="card kpi">${kpi("💧","Total Water",totals().water.toLocaleString("en-IN")+" L","Recorded events")}</div><div class="card kpi">${kpi("⏱","Hours",state.irrigation.reduce((a,x)=>a+num(x.duration),0).toFixed(1),"Irrigation time")}</div><div class="card kpi">${kpi("₹","Water Cost",money(state.irrigation.reduce((a,x)=>a+num(x.cost),0)),"Recorded irrigation cost")}</div></div>
+ <div class="card table-wrap" style="margin-top:16px"><table class="table"><thead><tr><th>Date</th><th>Field</th><th>Crop</th><th>Source</th><th>Method</th><th>Duration</th><th>Volume</th><th>Cost</th><th></th></tr></thead><tbody>${state.irrigation.map(x=>`<tr><td>${dateLabel(x.date)}</td><td>${esc(fieldName(x.fieldId))}</td><td>${esc(cropName(x.cropId))}</td><td>${esc(x.source)}</td><td>${esc(x.method)}</td><td>${num(x.duration)} h</td><td>${num(x.volume).toLocaleString("en-IN")} L</td><td>${money(x.cost)}</td><td><button class="btn" data-delete="irrigation:${x.id}">Delete</button></td></tr>`).join("")}</tbody></table></div>`;
+ bindActions();
+}
+function inventory(){
+ document.getElementById("inventory").innerHTML=`<div class="toolbar"><div><h2>Inventory</h2><div class="muted small">Transaction-oriented stock tracking</div></div><button class="btn primary" data-action="inventory">＋ Add / Adjust Stock</button></div>
+ <div class="card table-wrap"><table class="table"><thead><tr><th>Item</th><th>Category</th><th>Unit</th><th>Opening</th><th>Purchase</th><th>Used</th><th>Current</th><th>Status</th><th></th></tr></thead><tbody>${state.inventory.map(x=>{const cur=totalInventory(x);return `<tr><td><strong>${esc(x.name)}</strong></td><td>${esc(x.category)}</td><td>${esc(x.unit)}</td><td>${num(x.opening)}</td><td>${num(x.purchases)}</td><td>${num(x.used)}</td><td><strong>${cur}</strong></td><td>${cur<=10?'<span class="badge warn">Reorder</span>':'<span class="badge">Healthy</span>'}</td><td><button class="btn" data-delete="inventory:${x.id}">Delete</button></td></tr>`}).join("")}</tbody></table></div>`;
+ bindActions();
+}
+function labour(){
+ document.getElementById("labour").innerHTML=`<div class="toolbar"><div><h2>Labour</h2><div class="muted small">Daily, hourly, task and contract work records</div></div><button class="btn primary" data-action="labour">＋ Record Labour</button></div>
+ <div class="card table-wrap"><table class="table"><thead><tr><th>Date</th><th>Worker</th><th>Field</th><th>Task</th><th>Hours</th><th>Rate</th><th>Cost</th><th></th></tr></thead><tbody>${state.labour.map(x=>`<tr><td>${dateLabel(x.date)}</td><td>${esc(x.worker)}</td><td>${esc(fieldName(x.fieldId))}</td><td>${esc(x.task)}</td><td>${num(x.hours)}</td><td>${money(x.rate)}/h</td><td>${money(x.cost)}</td><td><button class="btn" data-delete="labour:${x.id}">Delete</button></td></tr>`).join("")}</tbody></table></div>`;
+ bindActions();
+}
+function finance(){
+ const t=totals(); const byCat={};state.expenses.forEach(x=>byCat[x.category]=(byCat[x.category]||0)+num(x.amount));
+ document.getElementById("finance").innerHTML=`<div class="toolbar"><div><h2>Finance</h2><div class="muted small">Expenses, revenue and profitability</div></div><div><button class="btn" data-action="expense">＋ Expense</button> <button class="btn primary" data-action="sale">＋ Sale</button></div></div>
+ <div class="grid grid-4">${kpi("₹","Revenue",money(t.revenue),"Sales")}${kpi("₹","Total Cost",money(t.cost),"Expenses + labour + irrigation + activity")}${kpi("₹","Profit",money(t.profit),"Revenue − tracked cost")}${kpi("⚖","Profit / Acre",money(t.area?t.profit/t.area:0),"Calculated from current records")}</div>
+ <div class="grid grid-2" style="margin-top:16px"><div class="card"><h3>Expense Categories</h3>${Object.keys(byCat).length?Object.entries(byCat).map(([k,v])=>`<div class="list-item"><span>${esc(k)}</span><strong>${money(v)}</strong></div>`).join(""):`<div class="empty">No expenses.</div>`}</div>
+ <div class="card"><h3>Recent Sales</h3>${state.sales.length?state.sales.slice(0,8).map(s=>`<div class="list-item"><div><strong>${num(s.quantity)} kg</strong><div class="small muted">${dateLabel(s.date)} · ${esc(s.customer)}</div></div><strong>${money(s.revenue)}</strong></div>`).join(""):`<div class="empty">No sales.</div>`}</div></div>`;
+ bindActions();
+}
+function tasks(){
+ document.getElementById("tasks").innerHTML=`<div class="toolbar"><div><h2>Tasks & Reminders</h2><div class="muted small">Operational backbone: pending, scheduled, in progress, completed</div></div><button class="btn primary" data-action="task">＋ Add Task</button></div>
+ <div class="grid grid-3">${state.tasks.map(x=>`<div class="card"><div style="display:flex;justify-content:space-between"><strong>${esc(x.title)}</strong><span class="badge ${x.priority==="High"?"warn":""}">${esc(x.priority)}</span></div><p class="small muted">${esc(fieldName(x.fieldId))} · ${esc(x.type)}</p><p>Due <strong>${dateLabel(x.due)}</strong></p><select data-task-status="${x.id}">${["Pending","Scheduled","In Progress","Completed","Skipped","Cancelled"].map(s=>`<option ${s===x.status?"selected":""}>${s}</option>`).join("")}</select><div style="margin-top:10px"><button class="btn" data-delete="task:${x.id}">Delete</button></div></div>`).join("")||`<div class="card empty">No tasks.</div>`}</div>`;
+ document.querySelectorAll("[data-task-status]").forEach(s=>s.addEventListener("change",e=>{const x=state.tasks.find(t=>t.id===e.target.dataset.taskStatus);if(x){x.status=e.target.value;addAudit("Task","Updated",`${x.title} → ${x.status}`);save();render("tasks");}}));
+ bindActions();
+}
+function weather(){
+ document.getElementById("weather").innerHTML=`<div class="toolbar"><div><h2>Weather</h2><div class="muted small">Weather information is kept separate from agronomic recommendations</div></div></div>
+ <div class="grid grid-3"><div class="card weather"><h3>Current</h3><div class="weather-temp">28°C</div><div class="muted">Partly cloudy</div><p>Humidity 68% · Wind 12 km/h</p></div><div class="card"><h3>Tomorrow</h3><div class="weather-temp">27°C</div><p>Rain probability <strong>70%</strong></p><div class="notice">Review scheduled irrigation for possible rain conflict.</div></div><div class="card"><h3>Data status</h3><p>Last successful observation</p><strong>30 Sep 2026 · 18:00</strong><p class="small muted">Demo data — connect a weather adapter/API in production.</p></div></div>
+ <div class="card" style="margin-top:16px"><h3>7-day forecast placeholder</h3><div class="bar-chart">${[55,70,45,30,80,60,40].map((v,i)=>`<div class="bar" style="height:${v}%"><em>${v}%</em><span>${["Thu","Fri","Sat","Sun","Mon","Tue","Wed"][i]}</span></div>`).join("")}</div></div>`;
+}
+function reports(){
+ const t=totals();const cropRows=state.crops.map(c=>{const yieldKg=state.harvests.filter(h=>h.cropId===c.id).reduce((a,h)=>a+num(h.quantity),0);const cost=cropCost(c.id);const rev=state.sales.filter(s=>state.harvests.find(h=>h.id===s.harvestId)?.cropId===c.id).reduce((a,s)=>a+num(s.revenue),0);return {c,yieldKg,cost,rev,profit:rev-cost};});
+ document.getElementById("reports").innerHTML=`<div class="toolbar"><div><h2>Reports & Analytics</h2><div class="muted small">Production, cost, profitability, water, labour and input-efficiency KPIs</div></div><button class="btn" data-export>Export JSON</button></div>
+ <div class="grid grid-4">${kpi("🌾","Total Yield",t.harvest.toLocaleString("en-IN")+" kg","Production")}${kpi("⚖","Yield / Acre",(t.area?t.harvest/t.area:0).toFixed(0)+" kg","Production efficiency")}${kpi("💧","Water / Kg",(t.harvest?t.water/t.harvest:0).toFixed(2)+" L","Water efficiency")}${kpi("👷","Labour Cost",money(t.labour),"Labour")}</div>
+ <div class="card table-wrap" style="margin-top:16px"><h3>Crop Dashboard</h3><table class="table"><thead><tr><th>Crop</th><th>Area</th><th>Stage</th><th>Cost</th><th>Yield</th><th>Revenue</th><th>Profit</th></tr></thead><tbody>${cropRows.map(r=>`<tr><td>${esc(r.c.crop)}</td><td>${num(r.c.area)} acre</td><td>${esc(r.c.stage)}</td><td>${money(r.cost)}</td><td>${r.yieldKg.toLocaleString("en-IN")} kg</td><td>${money(r.rev)}</td><td>${money(r.profit)}</td></tr>`).join("")}</tbody></table></div>
+ <div class="grid grid-2" style="margin-top:16px"><div class="card"><h3>Cost Composition</h3><div class="bar-chart">${[["Expenses",t.expenses],["Labour",t.labour],["Irrigation",t.irrigation],["Activities",t.cropActivities]].map(([n,v])=>{const max=Math.max(t.cost,1);return `<div class="bar" style="height:${Math.max(6,v/max*100)}%"><em>${money(v)}</em><span>${n}</span></div>`}).join("")}</div></div><div class="card"><h3>Audit Trail</h3><div class="list">${state.audit.slice(0,8).map(a=>`<div class="list-item"><div><strong>${esc(a.entity)} · ${esc(a.action)}</strong><div class="small muted">${esc(a.detail)}</div></div><span class="small">${dateLabel(a.date)}</span></div>`).join("")}</div></div></div>`;
+ document.querySelector("[data-export]")?.addEventListener("click",exportData);
+}
+function traceability(){
+ const h=state.harvests[0], c=h?state.crops.find(x=>x.id===h.cropId):null;
+ document.getElementById("traceability").innerHTML=`<div class="toolbar"><div><h2>Traceability</h2><div class="muted small">Farm → Field → Crop Cycle → Inputs → Activities → Harvest → Sale</div></div></div>
+ <div class="card"><div class="timeline">
+ ${["Farm: "+(state.farms[0]?.name||"—"),"Field: "+(h?fieldName(h.fieldId):"—"),"Crop Cycle: "+(c?c.crop+" / "+c.variety:"—"),"Activities: "+state.activities.length+" recorded","Irrigation: "+state.irrigation.length+" events","Harvest Lot: "+(h?.lot||"—"),"Sale: "+(state.sales[0]?money(state.sales[0].revenue):"—"),"Customer: "+(state.sales[0]?.customer||"—")].map((x,i)=>`<div class="timeline-item"><strong>${esc(x)}</strong><div class="small muted">${i===0?"Production origin":"Lifecycle record"}</div></div>`).join("")}</div></div>`;
+}
+function admin(){
+ document.getElementById("admin").innerHTML=`<div class="toolbar"><div><h2>Administration</h2><div class="muted small">Configuration, data lifecycle and local demo controls</div></div></div>
+ <div class="grid grid-2"><div class="card"><h3>Configuration</h3><div class="form-grid">
+ <div class="field"><label>Language</label><select id="cfgLang"><option>English</option><option>Hindi</option><option>Marathi</option><option>Tamil</option><option>Telugu</option><option>Kannada</option></select></div>
+ <div class="field"><label>Area unit</label><select id="cfgUnit"><option>acre</option><option>hectare</option></select></div></div><button class="btn primary" id="saveCfg" style="margin-top:12px">Save Configuration</button></div>
+ <div class="card"><h3>Data & Offline</h3><p class="small muted">This standalone web app stores demo records locally. Production deployment should replace local persistence with a secure API + database and an offline synchronization engine.</p>
+ <button class="btn" id="resetData">Reset Demo Data</button> <button class="btn" id="syncNow">Simulate Sync</button></div></div>`;
+ document.getElementById("cfgLang").value=state.settings.language;document.getElementById("cfgUnit").value=state.settings.areaUnit;
+ document.getElementById("saveCfg").onclick=()=>{state.settings.language=document.getElementById("cfgLang").value;state.settings.areaUnit=document.getElementById("cfgUnit").value;save();showToast("Configuration saved.");};
+ document.getElementById("resetData").onclick=()=>{if(confirm("Reset all local demo data?")){state=clone(seed);save();showToast("Demo data reset.");renderAll();}};
+ document.getElementById("syncNow").onclick=()=>{updateSync("Syncing…");setTimeout(()=>{updateSync("Synced locally");showToast("Sync simulation completed.");},700)};
+}
+
+function selectOptions(items,selected=""){return items.map(x=>`<option value="${esc(x.id)}" ${x.id===selected?"selected":""}>${esc(x.name||x.crop||x.title)}</option>`).join("");}
+function form(title,fields,submit){
+ const html=`<form id="dynamicForm" novalidate><div class="form-grid">${fields.map(f=>`<div class="field ${f.full?"full":""}"><label>${esc(f.label)}${f.required?" *":""}</label>${f.type==="select"?`<select name="${esc(f.name)}" ${f.required?"required":""}>${f.options||""}</select>`:f.type==="textarea"?`<textarea name="${esc(f.name)}" rows="3" ${f.required?"required":""}>${esc(f.value||"")}</textarea>`:`<input name="${esc(f.name)}" type="${f.type||"text"}" value="${esc(f.value||"")}" ${f.min!==undefined?`min="${f.min}"`:""} ${f.step?`step="${f.step}"`:""} ${f.required?"required":""}>`}</div>`).join("")}</div><div style="margin-top:16px;text-align:right"><button class="btn" type="button" data-close>Cancel</button> <button class="btn primary" type="submit">${esc(submit||"Save")}</button></div></form>`;
+ openModal(title,html);
+ document.getElementById("dynamicForm").addEventListener("submit",e=>{e.preventDefault();const fd=new FormData(e.target);const data=Object.fromEntries(fd.entries());try{validateForm(data,fields);window.__formSubmit(data);closeModal();}catch(err){showToast(err.message);}});
+}
+function validateForm(data,fields){
+ for(const f of fields)if(f.required&&!String(data[f.name]??"").trim())throw new Error(`${f.label} is required.`);
+ for(const f of fields)if(["number"].includes(f.type)&&data[f.name]!==""&&Number(data[f.name])<Number(f.min??0))throw new Error(`${f.label} must be at least ${f.min??0}.`);
+}
+function setSubmit(fn){window.__formSubmit=fn;}
+
+function addFarm(){const fields=[{name:"name",label:"Farm name",required:true},{name:"location",label:"Location",required:true},{name:"area",label:"Area",type:"number",min:0.01,step:"0.01",required:true},{name:"unit",label:"Unit",type:"select",options:"<option>acre</option><option>hectare</option>"}];setSubmit(d=>{const x={id:uid("farm"),...d,area:num(d.area)};state.farms.push(x);addAudit("Farm","Created",x.name);save();render("farms");showToast("Farm added.");});form("Add Farm",fields,"Add Farm");}
+function addField(){const fields=[{name:"name",label:"Field name",required:true},{name:"farmId",label:"Farm",type:"select",options:selectOptions(state.farms),required:true},{name:"area",label:"Area",type:"number",min:0.01,step:"0.01",required:true},{name:"unit",label:"Unit",type:"select",options:"<option>acre</option><option>hectare</option>"}];setSubmit(d=>{const x={id:uid("field"),...d,area:num(d.area)};state.fields.push(x);addAudit("Field","Created",x.name);save();render("fields");showToast("Field added.");});form("Add Field",fields,"Add Field");}
+function addCrop(){const fields=[{name:"crop",label:"Crop",required:true},{name:"variety",label:"Variety",required:true},{name:"fieldId",label:"Field",type:"select",options:selectOptions(state.fields),required:true},{name:"season",label:"Season",value:"Kharif 2026",required:true},{name:"sowing",label:"Sowing date",type:"date",required:true},{name:"expectedHarvest",label:"Expected harvest",type:"date",required:true},{name:"area",label:"Area",type:"number",min:0.01,step:"0.01",required:true},{name:"stage",label:"Growth stage",type:"select",options:["Seed","Germination","Seedling","Vegetative Growth","Flowering","Fruit / Grain Development","Maturity","Harvest"].map(x=>`<option>${x}</option>`).join("")}];setSubmit(d=>{const x={id:uid("crop"),...d,area:num(d.area),status:"Active"};state.crops.push(x);addAudit("CropCycle","Created",`${x.crop} / ${x.variety}`);save();render("crops");showToast("Crop cycle created.");});form("Start Crop Cycle",fields,"Start Cycle");}
+function addActivity(){const fields=[{name:"type",label:"Activity type",type:"select",options:["Sowing","Transplanting","Irrigation","Fertilization","Spraying","Weeding","Pest Observation","Disease Observation","Pruning","Cultivation","Harvest","Other"].map(x=>`<option>${x}</option>`).join("")},{name:"fieldId",label:"Field",type:"select",options:selectOptions(state.fields),required:true},{name:"cropId",label:"Crop cycle",type:"select",options:selectOptions(state.crops.map(x=>({id:x.id,name:`${x.crop} — ${fieldName(x.fieldId)}`}))),required:true},{name:"date",label:"Date",type:"date",value:new Date().toISOString().slice(0,10),required:true},{name:"quantity",label:"Quantity",type:"number",min:0,step:"0.01"},{name:"unit",label:"Unit",value:"kg"},{name:"cost",label:"Cost (₹)",type:"number",min:0,step:"0.01"},{name:"notes",label:"Notes",type:"textarea",full:true}];setSubmit(d=>{const x={id:uid("act"),...d,quantity:num(d.quantity),cost:num(d.cost),syncStatus:"PENDING_SYNC"};state.activities.unshift(x);if(x.cost)addAudit("Activity","Created",`${x.type} ${money(x.cost)}`);save();render("activities");showToast("Activity recorded.");});form("Record Crop Activity",fields,"Save Activity");}
+function addIrrigation(){const fields=[{name:"fieldId",label:"Field",type:"select",options:selectOptions(state.fields),required:true},{name:"cropId",label:"Crop cycle",type:"select",options:selectOptions(state.crops.map(x=>({id:x.id,name:`${x.crop} — ${fieldName(x.fieldId)}`})))},{name:"date",label:"Date",type:"date",value:new Date().toISOString().slice(0,10),required:true},{name:"duration",label:"Duration (hours)",type:"number",min:0,step:"0.1",required:true},{name:"volume",label:"Actual volume (L)",type:"number",min:0,step:"1",required:true},{name:"method",label:"Method",type:"select",options:["Flood","Drip","Sprinkler","Furrow","Rain","Other"].map(x=>`<option>${x}</option>`).join("")},{name:"source",label:"Water source",type:"select",options:["Borewell","River","Canal","Reservoir","Rainwater","Farm Pond","Municipal Supply","Other"].map(x=>`<option>${x}</option>`).join("")},{name:"cost",label:"Cost (₹)",type:"number",min:0,step:"0.01"}];setSubmit(d=>{const x={id:uid("irr"),...d,duration:num(d.duration),volume:num(d.volume),cost:num(d.cost),syncStatus:"PENDING_SYNC"};state.irrigation.unshift(x);addAudit("Irrigation","Created",`${x.volume} L — ${fieldName(x.fieldId)}`);save();render("irrigation");showToast("Irrigation recorded.");});form("Record Irrigation",fields,"Save Irrigation");}
+function addInventory(){const fields=[{name:"name",label:"Item",required:true},{name:"category",label:"Category",type:"select",options:["Seeds","Fertilizers","Pesticides","Animal Feed","Fuel","Spare Parts","Tools","Harvested Produce","Packaging","Other"].map(x=>`<option>${x}</option>`).join("")},{name:"unit",label:"Unit",value:"kg",required:true},{name:"opening",label:"Opening quantity",type:"number",min:0,step:"0.01"},{name:"purchases",label:"Purchase quantity",type:"number",min:0,step:"0.01"},{name:"used",label:"Consumed quantity",type:"number",min:0,step:"0.01"}];setSubmit(d=>{const x={id:uid("inv"),...d,opening:num(d.opening),purchases:num(d.purchases),used:num(d.used)};if(totalInventory(x)<0)throw new Error("Inventory cannot become negative.");state.inventory.unshift(x);addAudit("Inventory","Created",x.name);save();render("inventory");showToast("Inventory updated.");});form("Add / Adjust Inventory",fields,"Save Stock");}
+function addLabour(){const fields=[{name:"worker",label:"Worker",required:true},{name:"date",label:"Date",type:"date",value:new Date().toISOString().slice(0,10),required:true},{name:"fieldId",label:"Field",type:"select",options:selectOptions(state.fields),required:true},{name:"task",label:"Task",required:true},{name:"hours",label:"Hours",type:"number",min:0,step:"0.1",required:true},{name:"rate",label:"Wage rate (₹/hour)",type:"number",min:0,step:"0.01",required:true}];setSubmit(d=>{const x={id:uid("lab"),...d,hours:num(d.hours),rate:num(d.rate),cost:num(d.hours)*num(d.rate)};state.labour.unshift(x);addAudit("Labour","Created",`${x.worker} ${x.hours}h`);save();render("labour");showToast("Labour record saved.");});form("Record Labour",fields,"Save Labour");}
+function addExpense(){const fields=[{name:"date",label:"Date",type:"date",value:new Date().toISOString().slice(0,10),required:true},{name:"fieldId",label:"Field",type:"select",options:`<option value="">Farm-wide</option>${selectOptions(state.fields)}`},{name:"cropId",label:"Crop cycle",type:"select",options:`<option value="">Not crop-specific</option>${selectOptions(state.crops.map(x=>({id:x.id,name:`${x.crop} — ${fieldName(x.fieldId)}`})))}`},{name:"category",label:"Category",type:"select",options:["Seeds","Fertilizer","Pesticide","Labour","Machinery","Fuel","Electricity","Water","Irrigation","Transportation","Repairs","Maintenance","Land","Other"].map(x=>`<option>${x}</option>`).join("")},{name:"amount",label:"Amount (₹)",type:"number",min:0,step:"0.01",required:true},{name:"vendor",label:"Vendor"},{name:"notes",label:"Notes",type:"textarea",full:true}];setSubmit(d=>{const x={id:uid("exp"),...d,amount:num(d.amount)};state.expenses.unshift(x);addAudit("Expense","Created",`${money(x.amount)} — ${x.category}`);save();render("finance");showToast("Expense recorded.");});form("Record Expense",fields,"Save Expense");}
+function addSale(){const fields=[{name:"date",label:"Date",type:"date",value:new Date().toISOString().slice(0,10),required:true},{name:"harvestId",label:"Harvest lot",type:"select",options:selectOptions(state.harvests.map(x=>({id:x.id,name:`${x.lot} — ${cropName(x.cropId)}`}))),required:true},{name:"quantity",label:"Quantity sold (kg)",type:"number",min:0,step:"0.01",required:true},{name:"price",label:"Price (₹/kg)",type:"number",min:0,step:"0.01",required:true},{name:"customer",label:"Customer",required:true}];setSubmit(d=>{const x={id:uid("sale"),...d,quantity:num(d.quantity),price:num(d.price),revenue:num(d.quantity)*num(d.price)};const h=state.harvests.find(h=>h.id===x.harvestId);if(h&&x.quantity>num(h.quantity))throw new Error("Sale quantity cannot exceed harvest quantity.");state.sales.unshift(x);addAudit("Sale","Created",`${x.quantity} kg — ${money(x.revenue)}`);save();render("finance");showToast("Sale recorded.");});form("Record Sale",fields,"Save Sale");}
+function addHarvest(){const fields=[{name:"date",label:"Harvest date",type:"date",value:new Date().toISOString().slice(0,10),required:true},{name:"fieldId",label:"Field",type:"select",options:selectOptions(state.fields),required:true},{name:"cropId",label:"Crop cycle",type:"select",options:selectOptions(state.crops.map(x=>({id:x.id,name:`${x.crop} — ${fieldName(x.fieldId)}`}))),required:true},{name:"quantity",label:"Quantity (kg)",type:"number",min:0,step:"0.01",required:true},{name:"lot",label:"Harvest lot",required:true}];setSubmit(d=>{const x={id:uid("har"),...d,quantity:num(d.quantity)};state.harvests.unshift(x);addAudit("Harvest","Created",`${x.lot} ${x.quantity} kg`);save();showView("reports");showToast("Harvest recorded.");});form("Record Harvest",fields,"Save Harvest");}
+function addTask(){const fields=[{name:"title",label:"Task",required:true},{name:"fieldId",label:"Field",type:"select",options:`<option value="">Farm-wide</option>${selectOptions(state.fields)}`},{name:"type",label:"Task type",required:true},{name:"due",label:"Due date",type:"date",required:true},{name:"priority",label:"Priority",type:"select",options:"<option>High</option><option>Medium</option><option>Low</option>"},{name:"assigned",label:"Assigned to",value:"Farmer"}];setSubmit(d=>{const x={id:uid("task"),...d,status:"Pending"};state.tasks.unshift(x);addAudit("Task","Created",x.title);save();render("tasks");showToast("Task created.");});form("Add Task",fields,"Save Task");}
+
+function bindActions(){
+ document.querySelectorAll("[data-action]").forEach(b=>b.addEventListener("click",()=>({
+  farm:addFarm,field:addField,crop:addCrop,activity:addActivity,irrigation:addIrrigation,inventory:addInventory,
+  labour:addLabour,expense:addExpense,sale:addSale,harvest:addHarvest,task:addTask
+ }[b.dataset.action]||(()=>{}))()));
+ document.querySelectorAll("[data-delete]").forEach(b=>b.addEventListener("click",()=>removeItem(b.dataset.delete)));
+}
+function removeItem(spec){
+ const [type,id]=spec.split(":"); const map={farm:"farms",field:"fields",crop:"crops",activity:"activities",irrigation:"irrigation",inventory:"inventory",labour:"labour",task:"tasks"};
+ const arr=state[map[type]];if(!arr)return;
+ if(type==="farm"&&state.fields.some(x=>x.farmId===id))return showToast("Delete fields before deleting this farm.");
+ if(type==="field"&&state.crops.some(x=>x.fieldId===id))return showToast("Delete crop cycles before deleting this field.");
+ if(!confirm("Delete this record?"))return;
+ const idx=arr.findIndex(x=>x.id===id);if(idx<0)return;
+ const old=arr[idx];arr.splice(idx,1);addAudit(type,"Deleted",old.name||old.title||old.type||old.id);save();render(type==="farm"?"farms":type==="field"?"fields":type==="crop"?"crops":type==="activity"?"activities":type==="irrigation"?"irrigation":type==="inventory"?"inventory":type==="labour"?"labour":"tasks");showToast("Record deleted.");
+}
+function exportData(){const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="farm-management-data.json";a.click();URL.revokeObjectURL(a.href);}
+function render(id){({dashboard,farms,fields,crops,activities,irrigation,inventory,labour,finance,tasks,weather,reports,traceability,admin}[id]||dashboard)();}
+function renderAll(){MODULES.forEach(x=>render(x[0]));showView("dashboard");}
+window.addEventListener("online",()=>updateSync("Online — sync ready"));
+window.addEventListener("offline",()=>updateSync("Offline — local mode"));
+nav();renderAll();
+</script>
+</body>
+</html>
